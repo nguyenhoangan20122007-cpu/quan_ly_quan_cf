@@ -5,7 +5,6 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 load_dotenv()
 duong_dan_csdl = os.getenv("DATABASE_URL", "sqlite:///./cafe.db")
-print("Loai database:", duong_dan_csdl.split(":")[0])
 tham_so_ket_noi = {"connect_args": {"check_same_thread": False}} if duong_dan_csdl.startswith("sqlite") else {}
 bo_may_csdl = create_engine(duong_dan_csdl, **tham_so_ket_noi)
 PhienLamViec = sessionmaker(bind=bo_may_csdl, autoflush=False, autocommit=False)
