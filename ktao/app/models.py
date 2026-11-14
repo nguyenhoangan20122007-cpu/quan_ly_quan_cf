@@ -21,6 +21,7 @@ class DanhMuc(CoSo):
     __tablename__ = "categories"
     ma: Mapped[int] = mapped_column("id", primary_key=True)
     ten: Mapped[str] = mapped_column("name", String(100), unique=True)
+    trang_thai: Mapped[str] = mapped_column("status", String(20), default="active")
     san_pham: Mapped[list["SanPham"]] = relationship(back_populates="danh_muc")
 
 class SanPham(CoSo):
@@ -30,6 +31,8 @@ class SanPham(CoSo):
     ten: Mapped[str] = mapped_column("name", String(120))
     gia: Mapped[Decimal] = mapped_column("price", Numeric(12, 2))
     mo_ta: Mapped[str | None] = mapped_column("description", Text, nullable=True)
+    hinh_anh: Mapped[str | None] = mapped_column("image_url", String(500), nullable=True)
+    trang_thai: Mapped[str] = mapped_column("status", String(20), default="available")
     danh_muc: Mapped[DanhMuc] = relationship(back_populates="san_pham")
 
 class DonHang(CoSo):

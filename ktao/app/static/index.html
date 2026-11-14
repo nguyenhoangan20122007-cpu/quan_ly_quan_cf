@@ -1,5 +1,1613 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Quản lý quán cà phê</title><style>body{font-family:Arial;background:#f7f1e8;margin:0;color:#3b2b21}header{background:#63452e;color:white;padding:24px;text-align:center}main{max-width:850px;margin:30px auto}.khung{background:white;border-radius:12px;padding:20px;margin:15px}input,button{padding:10px;margin:5px}button{background:#63452e;color:white;border:0;border-radius:5px}</style></head><body><header><h1>☕ Quản lý quán cà phê</h1><p>Demo khởi tạo dự án</p></header><main><section class="khung"><h2>Thêm danh mục</h2><input id="ten_danh_muc" placeholder="Tên danh mục"><button onclick="themDanhMuc()">Thêm</button></section><section class="khung"><h2>Danh mục</h2><ul id="danh_sach_danh_muc"></ul></section><section class="khung"><h2>Sản phẩm</h2><ul id="danh_sach_san_pham"></ul><p>Thử thêm sản phẩm và đơn hàng tại <a href="/docs">Swagger API</a>.</p></section></main><script>
-function anToan(chuoi){return String(chuoi).replace(/[&<>"']/g, ky_tu=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ky_tu]));}
-async function taiDuLieu(){const danh_muc=await(await fetch('/categories')).json();document.querySelector('#danh_sach_danh_muc').innerHTML=danh_muc.map(muc=>`<li>${anToan(muc.ten)}</li>`).join('')||'<li>Chưa có danh mục</li>';const san_pham=await(await fetch('/products')).json();document.querySelector('#danh_sach_san_pham').innerHTML=san_pham.map(sp=>`<li>${anToan(sp.ten)} - ${Number(sp.gia).toLocaleString('vi-VN')} đ</li>`).join('')||'<li>Chưa có sản phẩm</li>';}
-async function themDanhMuc(){const ten=document.querySelector('#ten_danh_muc').value.trim();if(!ten)return;const ket_qua=await fetch('/categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ten})});if(!ket_qua.ok){alert('Không thêm được danh mục');return;}document.querySelector('#ten_danh_muc').value='';taiDuLieu();}taiDuLieu();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý quán cà phê</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5efe7;
+            color: #3b2b21;
+        }
+
+        header {
+            background: #63452e;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        .khung {
+            background: white;
+            padding: 22px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000012;
+        }
+
+        .an { display: none !important; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 11px;
+            margin: 6px 0 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 11px 18px;
+            background: #63452e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 4px;
+        }
+
+        button:hover { background: #8b6242; }
+
+        .nut_xoa { background: #c0392b; }
+        .nut_sua { background: #2980b9; }
+        .nut_huy { background: #888; }
+
+        .luoi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+        }
+
+        .san_pham {
+            border: 1px solid #eee;
+            padding: 18px;
+            border-radius: 10px;
+            background: #fffaf5;
+        }
+
+        .anh_do_uong {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .anh_mac_dinh {
+            width: 100%;
+            height: 180px;
+            background: #f2e7dc;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .gia {
+            color: #b85c38;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .thanh_tai_khoan {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bang_cuon { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border-bottom: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th { background: #f7f1e8; }
+
+        .tong_tien {
+            text-align: right;
+            font-size: 23px;
+            font-weight: bold;
+            color: #b85c38;
+        }
+
+        .loi { color: #c62828; }
+        .thanh_cong { color: #2e7d32; }
+
+        .the_thong_ke {
+            background: #fff8ef;
+            border-left: 5px solid #63452e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .the_thong_ke h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+        }
+
+        .the_thong_ke p {
+            margin: 0;
+            font-size: 25px;
+            font-weight: bold;
+            color: #b85c38;
+        }
+
+        @media (max-width: 600px) {
+            .thanh_tai_khoan {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>☕ Quản lý quán cà phê</h1>
+    <p>Hệ thống quản lý bán hàng</p>
+</header>
+
+<main>
+
+    <!-- DANG NHAP -->
+    <section id="khung_dang_nhap" class="khung">
+        <h2>Đăng nhập</h2>
+
+        <form id="bieu_mau_dang_nhap">
+            <input id="ten_dang_nhap" placeholder="Tên đăng nhập"
+                   autocomplete="username" required>
+
+            <input id="mat_khau" type="password"
+                   placeholder="Mật khẩu"
+                   autocomplete="current-password" required>
+
+            <button type="submit">Đăng nhập</button>
+        </form>
+
+        <p id="thong_bao_dang_nhap" class="loi"></p>
+    </section>
+
+    <div id="noi_dung_quan_ly" class="an">
+
+        <!-- TAI KHOAN -->
+        <section class="khung thanh_tai_khoan">
+            <div>
+                <h2>Thông tin tài khoản</h2>
+                <p id="thong_tin_tai_khoan"></p>
+            </div>
+
+            <button class="nut_huy" onclick="dangXuat()">
+                Đăng xuất
+            </button>
+        </section>
+
+        <!-- THONG KE ADMIN -->
+        <section id="khung_thong_ke" class="khung an">
+            <h2>📊 Thống kê kinh doanh</h2>
+
+            <button onclick="taiThongKe()">Làm mới thống kê</button>
+
+            <div class="luoi">
+                <div class="the_thong_ke">
+                    <h3>Tổng sản phẩm</h3>
+                    <p id="tong_san_pham">0</p>
+                </div>
+
+                <div class="the_thong_ke">
+                    <h3>Tổng đơn hàng</h3>
+                    <p id="tong_don_hang">0</p>
+                </div>
+
+                <div class="the_thong_ke">
+                    <h3>Đơn hoàn thành</h3>
+                    <p id="don_hoan_thanh">0</p>
+                </div>
+
+                <div class="the_thong_ke">
+                    <h3>Đơn đã hủy</h3>
+                    <p id="don_da_huy">0</p>
+                </div>
+
+                <div class="the_thong_ke">
+                    <h3>Doanh thu đơn hoàn thành</h3>
+                    <p id="doanh_thu">0 đ</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BAO CAO DOANH THU -->
+        <section id="khung_bao_cao" class="khung an">
+            <h2>📈 Báo cáo doanh thu</h2>
+            <p>Doanh thu được tính theo ngày tạo đơn của các đơn đã hoàn thành.</p>
+
+            <div class="luoi">
+                <div>
+                    <label for="tu_ngay">Từ ngày</label>
+                    <input type="date" id="tu_ngay">
+                </div>
+
+                <div>
+                    <label for="den_ngay">Đến ngày</label>
+                    <input type="date" id="den_ngay">
+                </div>
+            </div>
+
+            <button type="button" onclick="taiBaoCaoDoanhThu()">Xem báo cáo</button>
+            <button type="button" onclick="baoCaoHomNay()">Hôm nay</button>
+            <button type="button" onclick="baoCaoThangNay()">Tháng này</button>
+            <p id="thong_bao_bao_cao" role="status"></p>
+
+            <div class="luoi">
+                <div class="the_thong_ke">
+                    <h3>Tổng doanh thu</h3>
+                    <p id="bao_cao_tong_doanh_thu">0 đ</p>
+                </div>
+
+                <div class="the_thong_ke">
+                    <h3>Số đơn hoàn thành</h3>
+                    <p id="bao_cao_tong_don">0</p>
+                </div>
+            </div>
+
+            <h3>Biểu đồ doanh thu theo ngày</h3>
+            <div style="position: relative; height: 350px">
+                <canvas id="bieu_do_doanh_thu" role="img" aria-label="Biểu đồ cột doanh thu theo ngày"></canvas>
+            </div>
+
+            <h3>Chi tiết doanh thu</h3>
+            <div class="bang_cuon">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Ngày</th>
+                            <th scope="col">Số đơn</th>
+                            <th scope="col">Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bang_bao_cao"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- THEM DANH MUC -->
+        <section id="khung_them_danh_muc" class="khung an">
+            <h2 id="tieu_de_danh_muc">Thêm danh mục</h2>
+
+            <input type="hidden" id="ma_danh_muc_sua">
+
+            <label for="ten_danh_muc">Tên danh mục</label>
+            <input type="text" id="ten_danh_muc" placeholder="Nhập tên danh mục" maxlength="100">
+
+            <button type="button" id="nut_luu_danh_muc" onclick="themDanhMuc()">Thêm danh mục</button>
+            <button type="button" class="nut_huy" onclick="huySuaDanhMuc()">Hủy</button>
+        </section>
+
+        <!-- QUAN LY KHACH HANG -->
+<section class="khung">
+    <h2>👥 Quản lý khách hàng</h2>
+
+    <form id="bieu_mau_khach_hang">
+        <input type="hidden" id="ma_khach_hang_sua">
+
+        <label>Tên khách hàng</label>
+        <input
+            id="ten_khach_hang"
+            placeholder="Nhập tên khách hàng"
+            maxlength="100"
+            required
+        >
+
+        <label>Số điện thoại</label>
+        <input
+            id="so_dien_thoai"
+            placeholder="Nhập số điện thoại"
+            maxlength="20"
+        >
+
+        <button type="submit" id="nut_luu_khach_hang">
+            Thêm khách hàng
+        </button>
+
+        <button type="button" class="nut_huy" onclick="huySuaKhachHang()">
+            Hủy
+        </button>
+    </form>
+
+    <input
+        id="tim_khach_hang"
+        placeholder="🔍 Tìm khách hàng theo tên hoặc số điện thoại"
+        oninput="hienThiKhachHang()"
+    >
+
+    <div class="bang_cuon">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Tên khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+
+            <tbody id="danh_sach_khach_hang"></tbody>
+        </table>
+    </div>
+</section>
+
+        <!-- QUAN LY DANH MUC -->
+        <section class="khung">
+            <h2>📂 Quản lý danh mục</h2>
+
+            <label for="tim_danh_muc">Tìm kiếm danh mục</label>
+            <input type="text" id="tim_danh_muc"
+                   placeholder="Nhập tên danh mục cần tìm..." oninput="hienThiDanhMuc()">
+
+            <div class="bang_cuon">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Mã</th>
+                            <th scope="col">Tên danh mục</th>
+                            <th scope="col">Số đồ uống</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="danh_sach_danh_muc"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- THEM / SUA SAN PHAM -->
+        <section id="khung_san_pham_admin" class="khung an">
+            <h2 id="tieu_de_form_san_pham">Thêm sản phẩm</h2>
+
+            <form id="bieu_mau_san_pham">
+                <input type="hidden" id="ma_san_pham_sua">
+
+                <label>Tên sản phẩm</label>
+                <input id="ten_san_pham" required>
+
+                <label>Danh mục</label>
+                <select id="danh_muc_san_pham" required>
+                    <option value="">Chọn danh mục</option>
+                </select>
+
+                <label>Giá bán</label>
+                <input id="gia_san_pham" type="number" min="1"
+                       step="0.01" required>
+
+                <label>Mô tả</label>
+                <textarea id="mo_ta_san_pham"></textarea>
+
+                <label for="hinh_anh_san_pham">Đường dẫn hình ảnh</label>
+                <input type="text" id="hinh_anh_san_pham" placeholder="Nhập đường dẫn ảnh" maxlength="500">
+                <p>Ví dụ: https://example.com/ca-phe-sua.jpg</p>
+
+                <button type="submit" id="nut_luu_san_pham">
+                    Thêm sản phẩm
+                </button>
+
+                <button type="button" class="nut_huy"
+                        onclick="huySuaSanPham()">
+                    Hủy
+                </button>
+            </form>
+        </section>
+
+        <!-- SAN PHAM -->
+        <section class="khung">
+            <h2>Danh sách sản phẩm</h2>
+            <input
+    id="tim_san_pham"
+    placeholder="🔍 Tìm kiếm sản phẩm..."
+    oninput="hienThiSanPham()"
+>
+
+<select id="loc_danh_muc" onchange="hienThiSanPham()">
+    <option value="">Tất cả danh mục</option>
+</select>
+            <div id="danh_sach_san_pham" class="luoi"></div>
+        </section>
+
+        <!-- TUY CHINH DO UONG -->
+        <section id="khung_tuy_chinh" class="khung an">
+            <h2>Tùy chỉnh đồ uống</h2>
+            <p id="san_pham_dang_chon"></p>
+
+            <label>Số lượng</label>
+            <input id="so_luong" type="number" min="1" value="1">
+
+            <label>Phần trăm đường</label>
+            <select id="phan_tram_duong">
+                <option value="0">0% - Không đường</option>
+                <option value="25">25%</option>
+                <option value="50">50%</option>
+                <option value="75">75%</option>
+                <option value="100" selected>100%</option>
+            </select>
+
+            <label>Mức đá</label>
+            <select id="muc_da">
+                <option value="none">Không đá</option>
+                <option value="less">Ít đá</option>
+                <option value="normal" selected>Đá bình thường</option>
+                <option value="more">Nhiều đá</option>
+            </select>
+
+            <label>Ghi chú</label>
+            <textarea id="ghi_chu" maxlength="255"></textarea>
+
+            <button onclick="themVaoGio()">Thêm vào giỏ</button>
+            <button class="nut_huy" onclick="dongTuyChinh()">Hủy</button>
+        </section>
+
+        <!-- GIO HANG -->
+        <section class="khung">
+            <h2>🛒 Giỏ hàng</h2>
+
+            <div class="bang_cuon">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>SL</th>
+                            <th>Đường</th>
+                            <th>Đá</th>
+                            <th>Thành tiền</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="danh_sach_gio_hang"></tbody>
+                </table>
+            </div>
+
+            <label for="chon_khach_hang">Khách hàng</label>
+            <select id="chon_khach_hang"><option value="">Khách vãng lai</option></select>
+            <p id="tong_tien" class="tong_tien">Tổng tiền: 0 đ</p>
+
+            <button id="nut_tao_don" onclick="taoDonHang()">
+                Xác nhận đặt hàng
+            </button>
+        </section>
+
+        <!-- DON HANG -->
+        <section class="khung">
+            <h2>📋 Quản lý đơn hàng</h2>
+            <select id="loc_trang_thai" onchange="hienThiDonHang()">
+    <option value="">Tất cả đơn hàng</option>
+    <option value="pending">Chờ xử lý</option>
+    <option value="preparing">Đang pha chế</option>
+    <option value="completed">Hoàn thành</option>
+    <option value="cancelled">Đã hủy</option>
+</select>
+
+            <button onclick="taiDonHang()">Làm mới đơn hàng</button>
+
+            <div class="bang_cuon">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Trạng thái</th>
+                            <th>Tổng tiền</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="danh_sach_don_hang"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- THONG BAO -->
+        <section class="khung">
+            <h2>Thông báo</h2>
+            <p id="thong_bao_he_thong" aria-live="polite"></p>
+        </section>
+
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let token = "";
+    let vai_tro = "";
+    let danh_sach_danh_muc = [];
+    let danh_sach_san_pham = [];
+    let gio_hang = [];
+    let san_pham_dang_chon = null;
+    let dang_gui_don = false;
+    let danh_sach_khach_hang = [];
+    let danh_sach_don_hang = [];
+    let bieu_do_doanh_thu = null;
+    let yeu_cau_bao_cao = null;
+
+    const dinh_dang_ngay_vn = new Intl.DateTimeFormat("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    });
+
+    const ten_trang_thai = {
+        pending: "Chờ xử lý",
+        preparing: "Đang pha chế",
+        completed: "Hoàn thành",
+        cancelled: "Đã hủy"
+    };
+
+    const ten_muc_da = {
+        none: "Không đá",
+        less: "Ít đá",
+        normal: "Bình thường",
+        more: "Nhiều đá"
+    };
+
+    function anToan(chuoi) {
+        return String(chuoi).replace(/[&<>"']/g, ky_tu => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[ky_tu]));
+    }
+
+    function dinhDangTien(so_tien) {
+        return Number(so_tien).toLocaleString("vi-VN") + " đ";
+    }
+
+    function hienThongBao(noi_dung, la_loi = false) {
+        const o = document.querySelector("#thong_bao_he_thong");
+        o.textContent = noi_dung;
+        o.className = la_loi ? "loi" : "thanh_cong";
+    }
+
+    async function goiAPI(duong_dan, tuy_chon = {}) {
+        const headers = new Headers(tuy_chon.headers || {});
+
+        if (token) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+
+        if (tuy_chon.body) {
+            headers.set("Content-Type", "application/json");
+        }
+
+        const ket_qua = await fetch(duong_dan, {
+            ...tuy_chon,
+            headers
+        });
+
+        if (ket_qua.status === 401) {
+            dangXuat();
+            throw new Error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        }
+
+        if (ket_qua.status === 403) {
+            throw new Error("Bạn không có quyền thực hiện chức năng này.");
+        }
+
+        if (!ket_qua.ok) {
+            const loi = await ket_qua.json().catch(() => ({}));
+            throw new Error(
+                typeof loi.detail === "string"
+                    ? loi.detail
+                    : "Yêu cầu không thành công."
+            );
+        }
+
+        return ket_qua.json();
+    }
+
+    async function dangNhap(su_kien) {
+        su_kien.preventDefault();
+
+        const ten_dang_nhap = document.querySelector("#ten_dang_nhap").value.trim();
+        const mat_khau = document.querySelector("#mat_khau").value;
+        const thong_bao = document.querySelector("#thong_bao_dang_nhap");
+
+        thong_bao.textContent = "";
+
+        try {
+            const du_lieu_gui = new URLSearchParams();
+            du_lieu_gui.append("username", ten_dang_nhap);
+            du_lieu_gui.append("password", mat_khau);
+
+            const ket_qua = await fetch("/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: du_lieu_gui
+            });
+
+            const du_lieu = await ket_qua.json();
+
+            if (!ket_qua.ok) {
+                throw new Error(du_lieu.detail || "Đăng nhập thất bại.");
+            }
+
+            token = du_lieu.access_token;
+            vai_tro = du_lieu.vai_tro;
+
+            document.querySelector("#khung_dang_nhap").classList.add("an");
+            document.querySelector("#noi_dung_quan_ly").classList.remove("an");
+
+            document.querySelector("#thong_tin_tai_khoan").textContent =
+                "Tài khoản: " + du_lieu.ten_dang_nhap +
+                " | Vai trò: " + (vai_tro === "admin" ? "Admin" : "Nhân viên");
+
+            document.querySelector("#khung_them_danh_muc")
+                .classList.toggle("an", vai_tro !== "admin");
+
+            document.querySelector("#khung_san_pham_admin")
+                .classList.toggle("an", vai_tro !== "admin");
+
+            document.querySelector("#khung_thong_ke")
+                .classList.toggle("an", vai_tro !== "admin");
+
+            document.querySelector("#khung_bao_cao")
+                .classList.toggle("an", vai_tro !== "admin");
+
+            document.querySelector("#mat_khau").value = "";
+
+            await taiDuLieu();
+            await taiDonHang();
+            await taiKhachHang();
+
+            if (vai_tro === "admin") {
+                await taiThongKe();
+                await baoCaoThangNay();
+            }
+
+        } catch (loi) {
+            if (token) {
+                hienThongBao(loi.message, true);
+            } else {
+                thong_bao.textContent = loi.message;
+            }
+        }
+    }
+
+    function dangXuat() {
+        token = "";
+        vai_tro = "";
+        yeu_cau_bao_cao?.abort();
+        bieu_do_doanh_thu?.destroy();
+        bieu_do_doanh_thu = null;
+        document.querySelector("#khung_bao_cao").classList.add("an");
+        document.querySelector("#thong_bao_bao_cao").textContent = "";
+        document.querySelector("#bao_cao_tong_doanh_thu").textContent = dinhDangTien(0);
+        document.querySelector("#bao_cao_tong_don").textContent = "0";
+        document.querySelector("#bang_bao_cao").replaceChildren();
+
+        gio_hang = [];
+        san_pham_dang_chon = null;
+        danh_sach_danh_muc = [];
+        danh_sach_san_pham = [];
+        danh_sach_khach_hang = [];
+        danh_sach_don_hang = [];
+        document.querySelector("#danh_sach_khach_hang").innerHTML = "";
+        document.querySelector("#danh_sach_don_hang").innerHTML = "";
+        document.querySelector("#danh_sach_danh_muc").innerHTML = "";
+        document.querySelector("#tim_danh_muc").value = "";
+        huySuaDanhMuc();
+        document.querySelector("#danh_sach_san_pham").innerHTML = "";
+        document.querySelector("#chon_khach_hang").innerHTML = '<option value="">Khách vãng lai</option>';
+
+        document.querySelector("#khung_dang_nhap").classList.remove("an");
+        document.querySelector("#noi_dung_quan_ly").classList.add("an");
+        document.querySelector("#khung_tuy_chinh").classList.add("an");
+        document.querySelector("#mat_khau").value = "";
+
+        hienThiGioHang();
+    }
+
+    async function taiDuLieu() {
+        try {
+            danh_sach_danh_muc = await goiAPI("/categories");
+            danh_sach_san_pham = await goiAPI("/products");
+
+            const danh_muc_san_pham = document.querySelector("#danh_muc_san_pham");
+            const gia_tri_danh_muc = danh_muc_san_pham.value;
+            const tuy_chon_danh_muc = danh_sach_danh_muc.map(
+                muc => `<option value="${muc.ma}">${anToan(muc.ten)}</option>`
+            ).join("");
+            danh_muc_san_pham.innerHTML =
+                '<option value="">Chọn danh mục</option>' +
+                tuy_chon_danh_muc;
+            danh_muc_san_pham.value = gia_tri_danh_muc;
+            if (!danh_muc_san_pham.value) danh_muc_san_pham.value = "";
+
+            const loc_danh_muc = document.querySelector("#loc_danh_muc");
+            const gia_tri_loc = loc_danh_muc.value;
+            loc_danh_muc.innerHTML = '<option value="">Tất cả danh mục</option>' +
+                tuy_chon_danh_muc;
+            loc_danh_muc.value = gia_tri_loc;
+            if (!loc_danh_muc.value) loc_danh_muc.value = "";
+            hienThiDanhMuc();
+            hienThiSanPham();
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+        
+    }
+
+    function hienThiDanhMuc() {
+        const tu_khoa = document.querySelector("#tim_danh_muc").value.trim().toLowerCase();
+        const danh_sach = danh_sach_danh_muc.filter(muc =>
+            muc.ten.toLowerCase().includes(tu_khoa)
+        );
+
+        document.querySelector("#danh_sach_danh_muc").innerHTML =
+            danh_sach.map(muc => {
+                const so_do_uong = danh_sach_san_pham.filter(sp => sp.ma_danh_muc === muc.ma).length;
+                const dang_hoat_dong = muc.trang_thai === "active";
+
+                return `
+                    <tr>
+                        <td>${muc.ma}</td>
+                        <td>${anToan(muc.ten)}</td>
+                        <td>${so_do_uong}</td>
+                        <td>${dang_hoat_dong ? "Đang hoạt động" : "Ngừng hoạt động"}</td>
+                        <td>
+                            ${vai_tro === "admin" ? `
+                                <button type="button" class="nut_sua" onclick="batDauSuaDanhMuc(${muc.ma})">Sửa</button>
+                                <button type="button" class="nut_xoa" onclick="xoaDanhMuc(${muc.ma})">Xóa</button>
+                                <button type="button" onclick="doiTrangThaiDanhMuc(${muc.ma}, '${dang_hoat_dong ? "active" : "inactive"}')">
+                                    ${dang_hoat_dong ? "Tạm ẩn" : "Kích hoạt"}
+                                </button>
+                            ` : "Chỉ xem"}
+                        </td>
+                    </tr>
+                `;
+            }).join("") || '<tr><td colspan="5">Không tìm thấy danh mục</td></tr>';
+    }
+
+    function batDauSuaDanhMuc(ma) {
+        if (vai_tro !== "admin") return;
+
+        const danh_muc = danh_sach_danh_muc.find(muc => muc.ma === ma);
+        if (!danh_muc) {
+            hienThongBao("Không tìm thấy danh mục.", true);
+            return;
+        }
+
+        const khung = document.querySelector("#khung_them_danh_muc");
+        khung.classList.remove("an");
+        document.querySelector("#ma_danh_muc_sua").value = danh_muc.ma;
+        document.querySelector("#ten_danh_muc").value = danh_muc.ten;
+        document.querySelector("#tieu_de_danh_muc").textContent = "Sửa danh mục";
+        document.querySelector("#nut_luu_danh_muc").textContent = "Lưu thay đổi";
+        khung.scrollIntoView();
+    }
+
+    function huySuaDanhMuc() {
+        document.querySelector("#ma_danh_muc_sua").value = "";
+        document.querySelector("#ten_danh_muc").value = "";
+        document.querySelector("#tieu_de_danh_muc").textContent = "Thêm danh mục";
+        document.querySelector("#nut_luu_danh_muc").textContent = "Thêm danh mục";
+    }
+
+    async function themDanhMuc() {
+        if (vai_tro !== "admin") return;
+
+        const nut_luu = document.querySelector("#nut_luu_danh_muc");
+        if (nut_luu.disabled) return;
+
+        const ma = document.querySelector("#ma_danh_muc_sua").value;
+        const ten = document.querySelector("#ten_danh_muc").value.trim();
+
+        if (!ten) {
+            hienThongBao("Vui lòng nhập tên danh mục.", true);
+            return;
+        }
+
+        nut_luu.disabled = true;
+        try {
+            await goiAPI(ma ? "/categories/" + ma : "/categories", {
+                method: ma ? "PUT" : "POST",
+                body: JSON.stringify({ ten })
+            });
+
+            huySuaDanhMuc();
+            await taiDuLieu();
+            hienThongBao(ma ? "Sửa danh mục thành công." : "Thêm danh mục thành công.");
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        } finally {
+            nut_luu.disabled = false;
+        }
+    }
+
+    async function xoaDanhMuc(ma) {
+        if (vai_tro !== "admin") return;
+
+        const danh_muc = danh_sach_danh_muc.find(muc => muc.ma === ma);
+        if (!danh_muc) {
+            hienThongBao("Không tìm thấy danh mục.", true);
+            return;
+        }
+
+        const so_do_uong = danh_sach_san_pham.filter(sp => sp.ma_danh_muc === ma).length;
+        if (so_do_uong > 0) {
+            hienThongBao("Danh mục đang có " + so_do_uong + " đồ uống. Không thể xóa.", true);
+            return;
+        }
+
+        if (!confirm("Bạn có chắc muốn xóa danh mục " + danh_muc.ten + "?")) return;
+
+        try {
+            await goiAPI("/categories/" + ma, { method: "DELETE" });
+
+            if (document.querySelector("#ma_danh_muc_sua").value === String(ma)) {
+                huySuaDanhMuc();
+            }
+
+            await taiDuLieu();
+            hienThongBao("Xóa danh mục thành công.");
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    async function doiTrangThaiDanhMuc(ma, trang_thai_hien_tai) {
+        if (vai_tro !== "admin") return;
+
+        const trang_thai_moi =
+            trang_thai_hien_tai === "active" ? "inactive" : "active";
+
+        const xac_nhan = confirm(
+            trang_thai_moi === "inactive"
+                ? "Bạn có chắc muốn tạm ẩn danh mục này?"
+                : "Bạn muốn kích hoạt lại danh mục này?"
+        );
+
+        if (!xac_nhan) return;
+
+        try {
+            await goiAPI("/categories/" + ma + "/status", {
+                method: "PATCH",
+                body: JSON.stringify({
+                    trang_thai: trang_thai_moi
+                })
+            });
+
+            await taiDuLieu();
+
+            hienThongBao("Cập nhật trạng thái danh mục thành công.");
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    function batDauSuaSanPham(ma) {
+        if (vai_tro !== "admin") return;
+
+        const sp = danh_sach_san_pham.find(sp => sp.ma === ma);
+
+        if (!sp) return;
+
+        document.querySelector("#ma_san_pham_sua").value = sp.ma;
+        document.querySelector("#ten_san_pham").value = sp.ten;
+        document.querySelector("#danh_muc_san_pham").value = sp.ma_danh_muc;
+        document.querySelector("#gia_san_pham").value = sp.gia;
+        document.querySelector("#mo_ta_san_pham").value = sp.mo_ta || "";
+        document.querySelector("#hinh_anh_san_pham").value = sp.hinh_anh || "";
+
+        document.querySelector("#tieu_de_form_san_pham").textContent =
+            "Sửa sản phẩm #" + sp.ma;
+
+        document.querySelector("#nut_luu_san_pham").textContent =
+            "Lưu thay đổi";
+
+        document.querySelector("#khung_san_pham_admin")
+            .scrollIntoView({ behavior: "smooth" });
+    }
+
+    function huySuaSanPham() {
+        document.querySelector("#bieu_mau_san_pham").reset();
+        document.querySelector("#ma_san_pham_sua").value = "";
+
+        document.querySelector("#tieu_de_form_san_pham").textContent =
+            "Thêm sản phẩm";
+
+        document.querySelector("#nut_luu_san_pham").textContent =
+            "Thêm sản phẩm";
+    }
+
+    async function luuSanPham(su_kien) {
+        su_kien.preventDefault();
+
+        if (vai_tro !== "admin") return;
+
+        const ma = document.querySelector("#ma_san_pham_sua").value;
+
+        const du_lieu = {
+            ma_danh_muc: Number(
+                document.querySelector("#danh_muc_san_pham").value
+            ),
+            ten: document.querySelector("#ten_san_pham").value.trim(),
+            gia: Number(document.querySelector("#gia_san_pham").value),
+            mo_ta: document.querySelector("#mo_ta_san_pham").value.trim() || null,
+            hinh_anh: document.querySelector("#hinh_anh_san_pham").value.trim() || null
+        };
+
+        try {
+            await goiAPI(
+                ma ? "/products/" + ma : "/products",
+                {
+                    method: ma ? "PUT" : "POST",
+                    body: JSON.stringify(du_lieu)
+                }
+            );
+
+            huySuaSanPham();
+            await taiDuLieu();
+
+            if (vai_tro === "admin") {
+                await taiThongKe();
+            }
+
+            hienThongBao(
+                ma ? "Sửa sản phẩm thành công." : "Thêm sản phẩm thành công."
+            );
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    async function xoaSanPham(ma) {
+        if (vai_tro !== "admin") return;
+
+        const xac_nhan = confirm(
+            "Bạn có chắc muốn xóa sản phẩm #" + ma + "?"
+        );
+
+        if (!xac_nhan) return;
+
+        try {
+            await goiAPI("/products/" + ma, {
+                method: "DELETE"
+            });
+
+            await taiDuLieu();
+            await taiThongKe();
+
+            hienThongBao("Xóa sản phẩm thành công.");
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    async function doiTrangThaiSanPham(ma, trang_thai_hien_tai) {
+        if (vai_tro !== "admin") return;
+
+        const trang_thai_moi =
+            trang_thai_hien_tai === "available" ? "unavailable" : "available";
+
+        const xac_nhan = confirm(
+            trang_thai_moi === "unavailable"
+                ? "Bạn có chắc muốn ngừng bán đồ uống này?"
+                : "Bạn muốn mở bán lại đồ uống này?"
+        );
+
+        if (!xac_nhan) return;
+
+        try {
+            await goiAPI("/products/" + ma + "/status", {
+                method: "PATCH",
+                body: JSON.stringify({
+                    trang_thai: trang_thai_moi
+                })
+            });
+
+            await taiDuLieu();
+
+            hienThongBao("Cập nhật trạng thái đồ uống thành công.");
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    function chonSanPham(ma) {
+        san_pham_dang_chon = danh_sach_san_pham.find(
+            sp => sp.ma === ma
+        );
+
+        if (!san_pham_dang_chon) return;
+
+        document.querySelector("#san_pham_dang_chon").textContent =
+            san_pham_dang_chon.ten + " - " +
+            dinhDangTien(san_pham_dang_chon.gia);
+
+        document.querySelector("#so_luong").value = 1;
+        document.querySelector("#phan_tram_duong").value = 100;
+        document.querySelector("#muc_da").value = "normal";
+        document.querySelector("#ghi_chu").value = "";
+
+        document.querySelector("#khung_tuy_chinh").classList.remove("an");
+
+        document.querySelector("#khung_tuy_chinh")
+            .scrollIntoView({ behavior: "smooth" });
+    }
+
+    function dongTuyChinh() {
+        san_pham_dang_chon = null;
+        document.querySelector("#khung_tuy_chinh").classList.add("an");
+    }
+
+    function themVaoGio() {
+        if (!san_pham_dang_chon) return;
+
+        const so_luong = Number(document.querySelector("#so_luong").value);
+
+        if (!Number.isInteger(so_luong) || so_luong < 1) {
+            hienThongBao("Số lượng phải lớn hơn hoặc bằng 1.", true);
+            return;
+        }
+
+        gio_hang.push({
+            ma_san_pham: san_pham_dang_chon.ma,
+            ten: san_pham_dang_chon.ten,
+            gia: Number(san_pham_dang_chon.gia),
+            so_luong,
+            phan_tram_duong: Number(
+                document.querySelector("#phan_tram_duong").value
+            ),
+            muc_da: document.querySelector("#muc_da").value,
+            ghi_chu: document.querySelector("#ghi_chu").value.trim() || null
+        });
+
+        dongTuyChinh();
+        hienThiGioHang();
+        hienThongBao("Đã thêm sản phẩm vào giỏ hàng.");
+    }
+
+    function hienThiGioHang() {
+        document.querySelector("#danh_sach_gio_hang").innerHTML =
+            gio_hang.map((dong, vi_tri) => `
+                <tr>
+                    <td>
+                        ${anToan(dong.ten)}
+                        ${dong.ghi_chu
+                            ? `<br><small>${anToan(dong.ghi_chu)}</small>`
+                            : ""}
+                    </td>
+                    <td>${dong.so_luong}</td>
+                    <td>${dong.phan_tram_duong}%</td>
+                    <td>${ten_muc_da[dong.muc_da]}</td>
+                    <td>${dinhDangTien(dong.gia * dong.so_luong)}</td>
+                    <td>
+                        <button class="nut_xoa"
+                                onclick="xoaKhoiGio(${vi_tri})">
+                            Xóa
+                        </button>
+                    </td>
+                </tr>
+            `).join("") ||
+            '<tr><td colspan="6">Giỏ hàng đang trống</td></tr>';
+
+        const tong_tien = gio_hang.reduce(
+            (tong, dong) => tong + dong.gia * dong.so_luong,
+            0
+        );
+
+        document.querySelector("#tong_tien").textContent =
+            "Tổng tiền: " + dinhDangTien(tong_tien);
+    }
+
+    function xoaKhoiGio(vi_tri) {
+        gio_hang.splice(vi_tri, 1);
+        hienThiGioHang();
+    }
+
+    async function taoDonHang() {
+        if (dang_gui_don) return;
+
+        if (gio_hang.length === 0) {
+            hienThongBao("Giỏ hàng đang trống.", true);
+            return;
+        }
+
+        const ma_khach_hang = document.querySelector("#chon_khach_hang").value;
+        const du_lieu = {
+            ma_khach_hang: ma_khach_hang ? Number(ma_khach_hang) : null,
+            chi_tiet: gio_hang.map(dong => ({
+                ma_san_pham: dong.ma_san_pham,
+                so_luong: dong.so_luong,
+                phan_tram_duong: dong.phan_tram_duong,
+                muc_da: dong.muc_da,
+                ghi_chu: dong.ghi_chu
+            }))
+        };
+
+        dang_gui_don = true;
+        document.querySelector("#nut_tao_don").disabled = true;
+
+        try {
+            const ket_qua = await goiAPI("/orders", {
+                method: "POST",
+                body: JSON.stringify(du_lieu)
+            });
+
+            gio_hang = [];
+            hienThiGioHang();
+            document.querySelector("#chon_khach_hang").value = "";
+
+            hienThongBao(
+                "Tạo đơn hàng #" + ket_qua.ma +
+                " thành công. Tổng tiền: " +
+                dinhDangTien(ket_qua.tong_tien)
+            );
+
+            await taiDonHang();
+
+            if (vai_tro === "admin") {
+                await taiThongKe();
+            }
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        } finally {
+            dang_gui_don = false;
+            document.querySelector("#nut_tao_don").disabled = false;
+        }
+    }
+
+    async function taiDonHang() {
+    try {
+        danh_sach_don_hang = await goiAPI("/orders");
+        hienThiDonHang();
+    } catch (loi) {
+        hienThongBao(loi.message, true);
+    }
+}
+
+function hienThiDonHang() {
+    const trang_thai = document.querySelector("#loc_trang_thai").value;
+
+    const danh_sach_loc = danh_sach_don_hang.filter(don =>
+        !trang_thai || don.trang_thai === trang_thai
+    );
+
+    document.querySelector("#danh_sach_don_hang").innerHTML =
+        danh_sach_loc.map(don => {
+            let nut_thao_tac = "Đã kết thúc";
+
+            if (don.trang_thai === "pending") {
+                nut_thao_tac = `
+                    <button onclick="capNhatTrangThai(${don.ma}, 'preparing')">
+                        Pha chế
+                    </button>
+
+                    <button class="nut_xoa"
+                            onclick="capNhatTrangThai(${don.ma}, 'cancelled')">
+                        Hủy đơn
+                    </button>
+                `;
+            }
+
+            if (don.trang_thai === "preparing") {
+                nut_thao_tac = `
+                    <button onclick="capNhatTrangThai(${don.ma}, 'completed')">
+                        Hoàn thành
+                    </button>
+
+                    <button class="nut_xoa"
+                            onclick="capNhatTrangThai(${don.ma}, 'cancelled')">
+                        Hủy đơn
+                    </button>
+                `;
+            }
+
+            return `
+                <tr>
+                    <td>#${don.ma}</td>
+                    <td>${anToan(
+                        ten_trang_thai[don.trang_thai] || don.trang_thai
+                    )}</td>
+                    <td>${dinhDangTien(don.tong_tien)}</td>
+                    <td>${anToan(don.ngay_tao)}</td>
+                    <td>${nut_thao_tac}</td>
+                </tr>
+            `;
+        }).join("") ||
+        '<tr><td colspan="5">Không có đơn hàng phù hợp</td></tr>';
+}
+
+    async function capNhatTrangThai(ma, trang_thai) {
+        const xac_nhan = confirm(
+            "Xác nhận cập nhật đơn #" + ma +
+            " thành: " + ten_trang_thai[trang_thai] + "?"
+        );
+
+        if (!xac_nhan) return;
+
+        try {
+            await goiAPI("/orders/" + ma + "/status", {
+                method: "PATCH",
+                body: JSON.stringify({ trang_thai })
+            });
+
+            await taiDonHang();
+
+            if (vai_tro === "admin") {
+                await taiThongKe();
+            }
+
+            hienThongBao("Cập nhật trạng thái đơn hàng thành công.");
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    async function taiThongKe() {
+        if (vai_tro !== "admin") return;
+
+        try {
+            const du_lieu = await goiAPI("/statistics");
+
+            document.querySelector("#tong_san_pham").textContent =
+                du_lieu.tong_san_pham;
+
+            document.querySelector("#tong_don_hang").textContent =
+                du_lieu.tong_don_hang;
+
+            document.querySelector("#don_hoan_thanh").textContent =
+                du_lieu.don_hoan_thanh;
+
+            document.querySelector("#don_da_huy").textContent =
+                du_lieu.don_da_huy;
+
+            document.querySelector("#doanh_thu").textContent =
+                dinhDangTien(du_lieu.doanh_thu);
+
+        } catch (loi) {
+            hienThongBao(loi.message, true);
+        }
+    }
+
+    function dinhDangNgayVietNam(ngay) {
+        const { year, month, day } = Object.fromEntries(
+            dinh_dang_ngay_vn.formatToParts(ngay).map(({ type, value }) => [type, value])
+        );
+        return `${year}-${month}-${day}`;
+    }
+
+    async function taiBaoCaoDoanhThu() {
+        if (vai_tro !== "admin") return;
+
+        yeu_cau_bao_cao?.abort();
+        const tu_ngay = document.querySelector("#tu_ngay").value;
+        const den_ngay = document.querySelector("#den_ngay").value;
+        const thong_bao = document.querySelector("#thong_bao_bao_cao");
+
+        if (!tu_ngay || !den_ngay || tu_ngay > den_ngay) {
+            thong_bao.className = "loi";
+            thong_bao.textContent = !tu_ngay || !den_ngay
+                ? "Vui lòng chọn khoảng thời gian."
+                : "Ngày bắt đầu không được lớn hơn ngày kết thúc.";
+            return;
+        }
+
+        const yeu_cau = new AbortController();
+        yeu_cau_bao_cao = yeu_cau;
+        thong_bao.className = "";
+        thong_bao.textContent = "Đang tải báo cáo…";
+
+        try {
+            const tham_so = new URLSearchParams({ tu_ngay, den_ngay });
+            const du_lieu = await goiAPI("/statistics/revenue?" + tham_so, {
+                signal: yeu_cau.signal
+            });
+            if (yeu_cau.signal.aborted) return;
+
+            document.querySelector("#bao_cao_tong_doanh_thu").textContent =
+                dinhDangTien(du_lieu.tong_doanh_thu);
+            document.querySelector("#bao_cao_tong_don").textContent = du_lieu.tong_so_don;
+            document.querySelector("#bang_bao_cao").innerHTML =
+                du_lieu.chi_tiet.map(dong => `
+                    <tr>
+                        <td>${anToan(dong.ngay)}</td>
+                        <td>${dong.so_don}</td>
+                        <td>${dinhDangTien(dong.doanh_thu)}</td>
+                    </tr>
+                `).join("");
+
+            if (typeof Chart === "undefined") {
+                thong_bao.className = "loi";
+                thong_bao.textContent = "Không tải được thư viện biểu đồ Chart.js.";
+                return;
+            }
+
+            veBieuDoDoanhThu(du_lieu.chi_tiet);
+            thong_bao.className = "thanh_cong";
+            thong_bao.textContent = "Đã tải báo cáo doanh thu.";
+        } catch (loi) {
+            if (yeu_cau.signal.aborted) return;
+
+            thong_bao.className = "loi";
+            thong_bao.textContent = loi.message;
+        } finally {
+            if (yeu_cau_bao_cao === yeu_cau) {
+                yeu_cau_bao_cao = null;
+            }
+        }
+    }
+
+    function veBieuDoDoanhThu(danh_sach) {
+        bieu_do_doanh_thu?.destroy();
+        bieu_do_doanh_thu = new Chart(document.querySelector("#bieu_do_doanh_thu"), {
+            type: "bar",
+            data: {
+                labels: danh_sach.map(dong => dong.ngay),
+                datasets: [{
+                    label: "Doanh thu (VNĐ)",
+                    data: danh_sach.map(dong => dong.doanh_thu),
+                    backgroundColor: "#8b6242",
+                    borderColor: "#63452e",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function baoCaoHomNay() {
+        const hom_nay = dinhDangNgayVietNam(new Date());
+        document.querySelector("#tu_ngay").value = hom_nay;
+        document.querySelector("#den_ngay").value = hom_nay;
+        return taiBaoCaoDoanhThu();
+    }
+
+    function baoCaoThangNay() {
+        const hom_nay = dinhDangNgayVietNam(new Date());
+        document.querySelector("#tu_ngay").value = hom_nay.slice(0, 7) + "-01";
+        document.querySelector("#den_ngay").value = hom_nay;
+        return taiBaoCaoDoanhThu();
+    }
+
+    document.querySelector("#bieu_mau_dang_nhap")
+        .addEventListener("submit", dangNhap);
+
+    document.querySelector("#bieu_mau_san_pham")
+        .addEventListener("submit", luuSanPham);
+
+    hienThiGioHang();
+    async function taiKhachHang() {
+    try {
+        danh_sach_khach_hang = await goiAPI("/customers");
+        hienThiKhachHang();
+        const chon_khach_hang = document.querySelector("#chon_khach_hang");
+        const ma_dang_chon = chon_khach_hang.value;
+        chon_khach_hang.innerHTML = '<option value="">Khách vãng lai</option>' +
+            danh_sach_khach_hang.map(kh =>
+                `<option value="${kh.ma}">${anToan(kh.ten)}</option>`
+            ).join("");
+        chon_khach_hang.value = ma_dang_chon;
+    } catch (loi) {
+        hienThongBao(loi.message, true);
+    }
+}
+
+function hienThiKhachHang() {
+    const tu_khoa = document.querySelector("#tim_khach_hang")
+        .value.toLowerCase().trim();
+
+    const danh_sach_loc = danh_sach_khach_hang.filter(kh =>
+        kh.ten.toLowerCase().includes(tu_khoa) ||
+        (kh.so_dien_thoai || "").includes(tu_khoa)
+    );
+
+    document.querySelector("#danh_sach_khach_hang").innerHTML =
+        danh_sach_loc.map(kh => `
+            <tr>
+                <td>${kh.ma}</td>
+                <td>${anToan(kh.ten)}</td>
+                <td>${anToan(kh.so_dien_thoai || "")}</td>
+                <td>
+                    <button class="nut_sua"
+                            onclick="batDauSuaKhachHang(${kh.ma})">
+                        Sửa
+                    </button>
+
+                    ${vai_tro === "admin" ? `
+                        <button class="nut_xoa"
+                                onclick="xoaKhachHang(${kh.ma})">
+                            Xóa
+                        </button>
+                    ` : ""}
+                </td>
+            </tr>
+        `).join("") ||
+        '<tr><td colspan="4">Không tìm thấy khách hàng</td></tr>';
+}
+
+function batDauSuaKhachHang(ma) {
+    const kh = danh_sach_khach_hang.find(kh => kh.ma === ma);
+
+    if (!kh) return;
+
+    document.querySelector("#ma_khach_hang_sua").value = kh.ma;
+    document.querySelector("#ten_khach_hang").value = kh.ten;
+    document.querySelector("#so_dien_thoai").value = kh.so_dien_thoai || "";
+
+    document.querySelector("#nut_luu_khach_hang").textContent =
+        "Lưu thay đổi";
+}
+
+function huySuaKhachHang() {
+    document.querySelector("#bieu_mau_khach_hang").reset();
+    document.querySelector("#ma_khach_hang_sua").value = "";
+
+    document.querySelector("#nut_luu_khach_hang").textContent =
+        "Thêm khách hàng";
+}
+
+async function luuKhachHang(su_kien) {
+    su_kien.preventDefault();
+
+    const ma = document.querySelector("#ma_khach_hang_sua").value;
+
+    const du_lieu = {
+        ten: document.querySelector("#ten_khach_hang").value.trim(),
+        so_dien_thoai:
+            document.querySelector("#so_dien_thoai").value.trim() || null
+    };
+
+    if (!du_lieu.ten) {
+        hienThongBao("Vui lòng nhập tên khách hàng.", true);
+        return;
+    }
+
+    try {
+        await goiAPI(
+            ma ? "/customers/" + ma : "/customers",
+            {
+                method: ma ? "PUT" : "POST",
+                body: JSON.stringify(du_lieu)
+            }
+        );
+
+        huySuaKhachHang();
+        await taiKhachHang();
+
+        hienThongBao(
+            ma ? "Sửa khách hàng thành công." :
+                 "Thêm khách hàng thành công."
+        );
+
+    } catch (loi) {
+        hienThongBao(loi.message, true);
+    }
+}
+
+async function xoaKhachHang(ma) {
+    if (vai_tro !== "admin") return;
+
+    if (!confirm("Bạn có chắc muốn xóa khách hàng #" + ma + "?")) {
+        return;
+    }
+
+    try {
+        await goiAPI("/customers/" + ma, {
+            method: "DELETE"
+        });
+
+        await taiKhachHang();
+        hienThongBao("Xóa khách hàng thành công.");
+
+    } catch (loi) {
+        hienThongBao(loi.message, true);
+    }
+}
+document.querySelector("#bieu_mau_khach_hang")
+    .addEventListener("submit", luuKhachHang);
+
+function hienThiSanPham() {
+    const tu_khoa = document.querySelector("#tim_san_pham")
+        .value.toLowerCase().trim();
+
+    const ma_danh_muc = document.querySelector("#loc_danh_muc").value;
+
+    const danh_sach_loc = danh_sach_san_pham.filter(sp => {
+        const dung_ten = sp.ten.toLowerCase().includes(tu_khoa);
+
+        const dung_danh_muc =
+            !ma_danh_muc ||
+            sp.ma_danh_muc === Number(ma_danh_muc);
+
+        return dung_ten && dung_danh_muc;
+    });
+
+    document.querySelector("#danh_sach_san_pham").innerHTML =
+        danh_sach_loc.map(sp => `
+            <div class="san_pham">
+                ${sp.hinh_anh ? `
+                    <img
+                        src="${anToan(sp.hinh_anh)}"
+                        alt="${anToan(sp.ten)}"
+                        class="anh_do_uong"
+                        onerror="this.hidden = true; this.nextElementSibling.classList.remove('an')"
+                    >
+                ` : ""}
+                <div class="anh_mac_dinh${sp.hinh_anh ? " an" : ""}" aria-hidden="true">☕</div>
+
+                <h3>${anToan(sp.ten)}</h3>
+
+                <p>${anToan(sp.mo_ta || "Đồ uống tại quán")}</p>
+
+                <p class="gia">${dinhDangTien(sp.gia)}</p>
+
+                <p>${sp.trang_thai === "available" ? "🟢 Đang bán" : "🔴 Ngừng bán"}</p>
+
+                ${sp.trang_thai === "available" && sp.trang_thai_danh_muc === "active" ? `
+                    <button onclick="chonSanPham(${sp.ma})">
+                        Chọn món
+                    </button>
+                ` : `
+                    <button disabled style="background:#999;cursor:not-allowed">
+                        Không thể đặt
+                    </button>
+                `}
+
+                ${vai_tro === "admin" ? `
+                    <button class="nut_sua"
+                            onclick="batDauSuaSanPham(${sp.ma})">
+                        Sửa
+                    </button>
+
+                    <button onclick="doiTrangThaiSanPham(${sp.ma}, '${sp.trang_thai === "available" ? "available" : "unavailable"}')">
+                        ${sp.trang_thai === "available" ? "Ngừng bán" : "Mở bán"}
+                    </button>
+
+                    <button class="nut_xoa"
+                            onclick="xoaSanPham(${sp.ma})">
+                        Xóa
+                    </button>
+                ` : ""}
+            </div>
+        `).join("") || "<p>Không tìm thấy sản phẩm</p>";
+}
+</script>
+
+</body>
+</html>
