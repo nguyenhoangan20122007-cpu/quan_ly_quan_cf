@@ -145,7 +145,7 @@ def xoa_danh_muc(
         raise HTTPException(409, "Danh mục đang có đồ uống, không thể xóa")
 
     try:
-        ket_qua = csdl.execute(delete(DanhMuc).where(DanhMuc.ma == ma))
+        ket_qua = csdl.connection().execute(delete(DanhMuc).where(DanhMuc.ma == ma))
         if ket_qua.rowcount == 0:
             raise HTTPException(404, "Không tìm thấy danh mục")
         csdl.commit()
