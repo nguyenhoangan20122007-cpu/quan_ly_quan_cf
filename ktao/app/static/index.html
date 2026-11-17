@@ -158,6 +158,53 @@
                 align-items: flex-start;
             }
         }
+
+        #khung_tuy_chinh {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 24px;
+            background: #fff;
+        }
+
+        #khung_tuy_chinh h2 {
+            color: #6f4e37;
+            margin-bottom: 20px;
+        }
+
+        #khung_tuy_chinh input,
+        #khung_tuy_chinh select,
+        #khung_tuy_chinh textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 14px;
+        }
+
+        #tong_tien {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6f4e37;
+            margin-top: 20px;
+        }
+
+        #nut_tao_don {
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            cursor: pointer;
+        }
+
+        #nut_tao_don:hover {
+            background: #15803d;
+        }
+
+        #nut_tao_don:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -434,13 +481,13 @@
 
         <!-- TUY CHINH DO UONG -->
         <section id="khung_tuy_chinh" class="khung an">
-            <h2>Tùy chỉnh đồ uống</h2>
+            <h2>☕ Tùy chỉnh đồ uống</h2>
             <p id="san_pham_dang_chon"></p>
 
-            <label>Số lượng</label>
+            <label for="so_luong">Số lượng</label>
             <input id="so_luong" type="number" min="1" value="1">
 
-            <label>Phần trăm đường</label>
+            <label for="phan_tram_duong">Phần trăm đường</label>
             <select id="phan_tram_duong">
                 <option value="0">0% - Không đường</option>
                 <option value="25">25%</option>
@@ -449,7 +496,7 @@
                 <option value="100" selected>100%</option>
             </select>
 
-            <label>Mức đá</label>
+            <label for="muc_da">Mức đá</label>
             <select id="muc_da">
                 <option value="none">Không đá</option>
                 <option value="less">Ít đá</option>
@@ -457,11 +504,11 @@
                 <option value="more">Nhiều đá</option>
             </select>
 
-            <label>Ghi chú</label>
-            <textarea id="ghi_chu" maxlength="255"></textarea>
+            <label for="ghi_chu">Ghi chú</label>
+            <textarea id="ghi_chu" maxlength="255" placeholder="Ví dụ: Ít ngọt, không topping..."></textarea>
 
-            <button onclick="themVaoGio()">Thêm vào giỏ</button>
-            <button class="nut_huy" onclick="dongTuyChinh()">Hủy</button>
+            <button type="button" onclick="themVaoGio()">🛒 Thêm vào giỏ</button>
+            <button type="button" class="nut_huy" onclick="dongTuyChinh()">Hủy</button>
         </section>
 
         <!-- GIO HANG -->
@@ -472,8 +519,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Sản phẩm</th>
-                            <th>SL</th>
+                            <th>Đồ uống</th>
+                            <th>Số lượng</th>
                             <th>Đường</th>
                             <th>Đá</th>
                             <th>Thành tiền</th>
@@ -489,7 +536,7 @@
             <select id="chon_khach_hang"><option value="">Khách vãng lai</option></select>
             <p id="tong_tien" class="tong_tien">Tổng tiền: 0 đ</p>
 
-            <button id="nut_tao_don" onclick="taoDonHang()">
+            <button type="button" id="nut_tao_don" onclick="taoDonHang()">
                 Xác nhận đặt hàng
             </button>
         </section>
