@@ -17,7 +17,7 @@ class DuLieuChiTiet(BaseModel):
     ma_san_pham: int
     so_luong: int = Field(ge=1)
     phan_tram_duong: int = Field(default=100, ge=0, le=100)
-    muc_da: str = Field(default="normal", pattern="^(none|less|normal|more)$")
+    muc_da: Literal["none", "less", "normal", "more"] = "normal"
     ghi_chu: str | None = Field(default=None, max_length=255)
 
 class DuLieuDonHang(BaseModel):

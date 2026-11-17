@@ -276,14 +276,14 @@ def tao_don_hang(
         if ket_qua is None:
             raise HTTPException(
                 404,
-                f"Không tìm thấy sản phẩm {dong.ma_san_pham}"
+                "Không tìm thấy đồ uống"
             )
 
         san_pham, trang_thai_danh_muc = ket_qua
         if san_pham.trang_thai != "available":
             raise HTTPException(
                 status_code=409,
-                detail=f"Sản phẩm {san_pham.ten} hiện đang ngừng bán"
+                detail=f"Đồ uống {san_pham.ten} đã ngừng bán"
             )
         if trang_thai_danh_muc != "active":
             raise HTTPException(
@@ -294,6 +294,7 @@ def tao_don_hang(
         danh_sach_san_pham[dong.ma_san_pham] = san_pham
 
     don_hang = DonHang(
+        ma_nhan_vien=nguoi_dung.ma,
         ma_khach_hang=du_lieu.ma_khach_hang,
         trang_thai="pending",
         tong_tien=Decimal("0")
