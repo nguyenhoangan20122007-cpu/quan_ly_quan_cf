@@ -23,6 +23,12 @@ class DuLieuChiTiet(BaseModel):
 class DuLieuDonHang(BaseModel):
     ma_khach_hang: int | None = None
     chi_tiet: list[DuLieuChiTiet] = Field(min_length=1)
+
+
+class DuLieuThanhToan(BaseModel):
+    phuong_thuc: Literal["cash", "transfer"]
+
+
 class DuLieuKhachHang(BaseModel):
     ten: str = Field(min_length=1, max_length=100)
     so_dien_thoai: str | None = Field(default=None, max_length=20)

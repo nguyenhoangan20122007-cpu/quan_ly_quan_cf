@@ -63,7 +63,10 @@ def tao_don_hang(
         ma_nhan_vien=nguoi_dung.ma,
         ma_khach_hang=du_lieu.ma_khach_hang,
         trang_thai="pending",
-        tong_tien=Decimal("0")
+        tong_tien=Decimal("0"),
+        phuong_thuc_thanh_toan=None,
+        trang_thai_thanh_toan="unpaid",
+        ngay_thanh_toan=None
     )
 
     tong_tien = Decimal("0")
