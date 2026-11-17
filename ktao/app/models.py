@@ -43,6 +43,11 @@ class DonHang(CoSo):
     ngay_tao: Mapped[datetime] = mapped_column("created_at", DateTime, default=lambda: datetime.now(timezone.utc))
     trang_thai: Mapped[str] = mapped_column("status", String(20), default="pending")
     tong_tien: Mapped[Decimal] = mapped_column("total", Numeric(12, 2), default=0)
+    phuong_thuc_thanh_toan: Mapped[str | None] = mapped_column("payment_method", String(20), nullable=True)
+    trang_thai_thanh_toan: Mapped[str] = mapped_column(
+        "payment_status", String(20), default="unpaid", server_default="unpaid"
+    )
+    ngay_thanh_toan: Mapped[datetime | None] = mapped_column("paid_at", DateTime, nullable=True)
     chi_tiet: Mapped[list["ChiTietDonHang"]] = relationship(back_populates="don_hang", cascade="all, delete-orphan")
 
 class ChiTietDonHang(CoSo):

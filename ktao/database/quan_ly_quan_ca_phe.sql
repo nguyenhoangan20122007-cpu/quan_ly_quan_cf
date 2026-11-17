@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS orders (
  created_at DATETIME NOT NULL,
  status VARCHAR(20) NOT NULL DEFAULT 'pending',
  total DECIMAL(12,2) NOT NULL DEFAULT 0,
+ payment_method VARCHAR(20) NULL,
+ payment_status VARCHAR(20) NOT NULL DEFAULT 'unpaid',
+ paid_at DATETIME NULL,
  FOREIGN KEY (user_id) REFERENCES users(id),
  FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
