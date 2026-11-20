@@ -516,12 +516,9 @@ def sua_khach_hang(
     }
 
 
-@ung_dung.get("/statistics/revenue")
-def thong_ke_doanh_thu_theo_ngay(
+def khoang_ngay_thong_ke(
     tu_ngay: str | None = Query(default=None, description="Ngày bắt đầu (YYYY-MM-DD)"),
-    den_ngay: str | None = Query(default=None, description="Ngày kết thúc (YYYY-MM-DD)"),
-    csdl: Session = Depends(lay_csdl),
-    _ = Depends(yeu_cau_admin)
+    den_ngay: str | None = Query(default=None, description="Ngày kết thúc (YYYY-MM-DD)")
 ):
     mui_gio_vn = ZoneInfo("Asia/Ho_Chi_Minh")
     hom_nay = datetime.now(mui_gio_vn).date()
@@ -556,13 +553,17 @@ def thong_ke_doanh_thu_theo_ngay(
     except OverflowError:
         raise HTTPException(status_code=400, detail="Khoảng ngày vượt ngoài phạm vi hỗ trợ") from None
 
+    return ngay_bat_dau, ngay_ket_thuc, mui_gio_vn, (
+        DonHang.trang_thai == "completed",
+        DonHang.ngay_tao >= bat_dau_utc,
+        DonHang.ngay_tao < ket_thuc_utc
+    )
+
+
+def tong_hop_doanh_thu_theo_ngay(csdl: Session, mui_gio_vn: ZoneInfo, dieu_kien):
     cac_don = csdl.execute(
         select(DonHang.ngay_tao, DonHang.tong_tien)
-        .where(
-            DonHang.trang_thai == "completed",
-            DonHang.ngay_tao >= bat_dau_utc,
-            DonHang.ngay_tao < ket_thuc_utc
-        )
+        .where(*dieu_kien)
         .execution_options(yield_per=1000)
     )
 
@@ -573,9 +574,27 @@ def thong_ke_doanh_thu_theo_ngay(
         so_don, doanh_thu = thong_ke.get(ngay, gia_tri_rong)
         thong_ke[ngay] = (so_don + 1, doanh_thu + tong_tien)
 
+    return thong_ke
+
+
+@ung_dung.get("/statistics/revenue", tags=["Thống kê"], dependencies=[Depends(yeu_cau_admin)])
+def thong_ke_doanh_thu_theo_ngay(
+    csdl: Session = Depends(lay_csdl),
+    khoang_ngay = Depends(khoang_ngay_thong_ke)
+):
+    ngay_bat_dau, ngay_ket_thuc, mui_gio_vn, dieu_kien = khoang_ngay
+    thong_ke = tong_hop_doanh_thu_theo_ngay(csdl, mui_gio_vn, dieu_kien)
+    tong_ly_ban = csdl.scalar(
+        select(func.coalesce(func.sum(ChiTietDonHang.so_luong), 0))
+        .join(DonHang, ChiTietDonHang.ma_don_hang == DonHang.ma)
+        .where(*dieu_kien)
+    )
+
     chi_tiet = []
     tong_so_don = 0
     tong_doanh_thu = Decimal("0")
+    gia_tri_rong = (0, Decimal("0"))
+    mot_ngay = timedelta(days=1)
     ngay = ngay_bat_dau
     while ngay <= ngay_ket_thuc:
         so_don, doanh_thu = thong_ke.get(ngay, gia_tri_rong)
@@ -592,6 +611,40 @@ def thong_ke_doanh_thu_theo_ngay(
         "tu_ngay": ngay_bat_dau.isoformat(),
         "den_ngay": ngay_ket_thuc.isoformat(),
         "tong_so_don": tong_so_don,
+        "tong_don_hang": tong_so_don,
         "tong_doanh_thu": float(tong_doanh_thu),
+        "tong_ly_ban": int(tong_ly_ban),
         "chi_tiet": chi_tiet
     }
+
+
+@ung_dung.get("/statistics/top-products", tags=["Thống kê"], dependencies=[Depends(yeu_cau_admin)])
+def thong_ke_do_uong_ban_chay(
+    csdl: Session = Depends(lay_csdl),
+    khoang_ngay = Depends(khoang_ngay_thong_ke)
+):
+    _, _, _, dieu_kien = khoang_ngay
+    tong_so_luong = func.sum(ChiTietDonHang.so_luong)
+    ket_qua = csdl.execute(
+        select(SanPham.ma, SanPham.ten, tong_so_luong)
+        .join(ChiTietDonHang, ChiTietDonHang.ma_san_pham == SanPham.ma)
+        .join(DonHang, ChiTietDonHang.ma_don_hang == DonHang.ma)
+        .where(*dieu_kien)
+        .group_by(SanPham.ma, SanPham.ten)
+        .order_by(tong_so_luong.desc(), SanPham.ma)
+        .limit(5)
+    )
+    return [{"ma": ma, "ten": ten, "so_luong": int(so_luong)} for ma, ten, so_luong in ket_qua]
+
+
+@ung_dung.get("/statistics/daily", tags=["Thống kê"], dependencies=[Depends(yeu_cau_admin)])
+def doanh_thu_theo_ngay(
+    csdl: Session = Depends(lay_csdl),
+    khoang_ngay = Depends(khoang_ngay_thong_ke)
+):
+    _, _, mui_gio_vn, dieu_kien = khoang_ngay
+    thong_ke = tong_hop_doanh_thu_theo_ngay(csdl, mui_gio_vn, dieu_kien)
+    return [
+        {"ngay": ngay.isoformat(), "doanh_thu": float(doanh_thu)}
+        for ngay, (_, doanh_thu) in sorted(thong_ke.items())
+    ]
