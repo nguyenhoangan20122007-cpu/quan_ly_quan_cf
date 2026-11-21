@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import lay_csdl
 from app.models import NguoiDung
 from app.security import kiem_tra_mat_khau, tao_access_token
-from app.dependencies import lay_nguoi_dung_hien_tai
+from app.dependencies import lay_nguoi_dung_hien_tai, ma_phien_nhan_vien
 
 
 # Tao router xac thuc
@@ -48,10 +48,13 @@ def dang_nhap(
             detail="Ten dang nhap hoac mat khau khong dung"
         )
 
-    # Tao JWT
-    token = tao_access_token({
-        "sub": str(nguoi_dung.ma)
-    })
+    if nguoi_dung.trang_thai == "locked":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị khóa")
+
+    du_lieu_token = {"sub": str(nguoi_dung.ma)}
+    if nguoi_dung.vai_tro == "staff":
+        du_lieu_token["phien"] = ma_phien_nhan_vien(nguoi_dung)
+    token = tao_access_token(du_lieu_token)
 
     return {
         "access_token": token,

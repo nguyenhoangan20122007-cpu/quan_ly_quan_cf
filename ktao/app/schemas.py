@@ -40,3 +40,20 @@ class DuLieuTrangThaiDanhMuc(BaseModel):
 
 class DuLieuTrangThaiSanPham(BaseModel):
     trang_thai: Literal["available", "unavailable"]
+
+
+class DuLieuThemNhanVien(BaseModel):
+    ten_dang_nhap: str = Field(min_length=3, max_length=50)
+    mat_khau: str = Field(min_length=6)
+
+
+class DuLieuSuaNhanVien(BaseModel):
+    ten_dang_nhap: str = Field(min_length=3, max_length=50)
+
+
+class DuLieuDoiMatKhau(BaseModel):
+    mat_khau_moi: str = Field(min_length=6)
+
+
+class DuLieuTrangThaiNhanVien(BaseModel):
+    trang_thai: Literal["active", "locked"]

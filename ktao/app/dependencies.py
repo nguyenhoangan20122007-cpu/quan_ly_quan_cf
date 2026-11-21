@@ -1,3 +1,5 @@
+import hmac
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -12,6 +14,11 @@ from app.security import khoa_bi_mat, thuat_toan
 xac_thuc_oauth2 = OAuth2PasswordBearer(
     tokenUrl="/auth/login"
 )
+
+
+def ma_phien_nhan_vien(nguoi_dung: NguoiDung) -> str:
+    # Mật khẩu đổi thì mã phiên đổi, kể cả khi đặt lại cùng một mật khẩu.
+    return hmac.digest(khoa_bi_mat.encode(), nguoi_dung.mat_khau_bam.encode(), "sha256").hex()
 
 
 # Lay thong tin nguoi dung hien tai
@@ -53,6 +60,10 @@ def lay_nguoi_dung_hien_tai(
     )
 
     if nguoi_dung is None:
+        raise loi_xac_thuc
+    if nguoi_dung.trang_thai == "locked":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tài khoản đã bị khóa")
+    if nguoi_dung.vai_tro == "staff" and du_lieu.get("phien") != ma_phien_nhan_vien(nguoi_dung):
         raise loi_xac_thuc
 
     return nguoi_dung

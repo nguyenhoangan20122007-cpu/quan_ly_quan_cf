@@ -7,8 +7,8 @@ from zoneinfo import ZoneInfo
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import delete, select, func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete, select, func, inspect
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from app.database import CoSo, bo_may_csdl, lay_csdl
 from app.models import (
@@ -24,17 +24,35 @@ from app.schemas import (
     DuLieuSanPham,
     DuLieuKhachHang,
     DuLieuTrangThaiDanhMuc,
-    DuLieuTrangThaiSanPham
+    DuLieuTrangThaiSanPham,
+    DuLieuThemNhanVien,
+    DuLieuSuaNhanVien,
+    DuLieuDoiMatKhau,
+    DuLieuTrangThaiNhanVien
 )
 from app.auth import router as auth_router
 from app.dependencies import yeu_cau_admin, yeu_cau_nhan_vien
+from app.security import bam_mat_khau
 from app.tao_don_hang import router as tao_don_hang_router
 from app.thanh_toan_lich_su_don import router as thanh_toan_lich_su_don_router
+
+
+def co_trang_thai_nguoi_dung() -> bool:
+    return any(cot["name"] == "status" for cot in inspect(bo_may_csdl).get_columns("users"))
 
 
 @asynccontextmanager
 async def vong_doi(ung_dung: FastAPI):
     CoSo.metadata.create_all(bind=bo_may_csdl)
+    if not co_trang_thai_nguoi_dung():
+        try:
+            with bo_may_csdl.begin() as ket_noi:
+                ket_noi.exec_driver_sql(
+                    "ALTER TABLE users ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'"
+                )
+        except DBAPIError:
+            if not co_trang_thai_nguoi_dung():
+                raise
     yield
 
 
@@ -514,6 +532,77 @@ def sua_khach_hang(
         "ten": khach_hang.ten,
         "so_dien_thoai": khach_hang.so_dien_thoai
     }
+
+
+def lay_nhan_vien(csdl: Session, ma: int) -> NguoiDung:
+    nhan_vien = csdl.get(NguoiDung, ma)
+    if nhan_vien is None or nhan_vien.vai_tro != "staff":
+        raise HTTPException(404, "Không tìm thấy nhân viên")
+    return nhan_vien
+
+
+def luu_ten_nhan_vien(csdl: Session, nhan_vien: NguoiDung, ten_dang_nhap: str):
+    ten_dang_nhap = ten_dang_nhap.strip()
+    if len(ten_dang_nhap) < 3:
+        raise HTTPException(400, "Tên đăng nhập phải có ít nhất 3 ký tự")
+
+    nhan_vien.ten_dang_nhap = ten_dang_nhap
+    csdl.add(nhan_vien)
+    try:
+        csdl.commit()
+    except IntegrityError as loi:
+        csdl.rollback()
+        raise HTTPException(409, "Tên đăng nhập đã tồn tại") from loi
+
+
+@ung_dung.get("/employees", tags=["Nhân viên"], dependencies=[Depends(yeu_cau_admin)])
+def danh_sach_nhan_vien(csdl: Session = Depends(lay_csdl)):
+    danh_sach = csdl.scalars(
+        select(NguoiDung).where(NguoiDung.vai_tro == "staff").order_by(NguoiDung.ma.desc())
+    )
+    return [
+        {
+            "ma": nv.ma,
+            "ten_dang_nhap": nv.ten_dang_nhap,
+            "vai_tro": nv.vai_tro,
+            "trang_thai": nv.trang_thai
+        }
+        for nv in danh_sach
+    ]
+
+
+@ung_dung.post("/employees", status_code=201, tags=["Nhân viên"], dependencies=[Depends(yeu_cau_admin)])
+def them_nhan_vien(du_lieu: DuLieuThemNhanVien, csdl: Session = Depends(lay_csdl)):
+    nhan_vien = NguoiDung(
+        mat_khau_bam=bam_mat_khau(du_lieu.mat_khau),
+        vai_tro="staff",
+        trang_thai="active"
+    )
+    luu_ten_nhan_vien(csdl, nhan_vien, du_lieu.ten_dang_nhap)
+    return {"ma": nhan_vien.ma, "thong_bao": "Thêm nhân viên thành công"}
+
+
+@ung_dung.put("/employees/{ma}", tags=["Nhân viên"], dependencies=[Depends(yeu_cau_admin)])
+def sua_nhan_vien(ma: int, du_lieu: DuLieuSuaNhanVien, csdl: Session = Depends(lay_csdl)):
+    nhan_vien = lay_nhan_vien(csdl, ma)
+    luu_ten_nhan_vien(csdl, nhan_vien, du_lieu.ten_dang_nhap)
+    return {"thong_bao": "Sửa nhân viên thành công"}
+
+
+@ung_dung.patch("/employees/{ma}/password", tags=["Nhân viên"], dependencies=[Depends(yeu_cau_admin)])
+def dat_lai_mat_khau(ma: int, du_lieu: DuLieuDoiMatKhau, csdl: Session = Depends(lay_csdl)):
+    nhan_vien = lay_nhan_vien(csdl, ma)
+    nhan_vien.mat_khau_bam = bam_mat_khau(du_lieu.mat_khau_moi)
+    csdl.commit()
+    return {"thong_bao": "Đặt lại mật khẩu thành công"}
+
+
+@ung_dung.patch("/employees/{ma}/status", tags=["Nhân viên"], dependencies=[Depends(yeu_cau_admin)])
+def doi_trang_thai_nhan_vien(ma: int, du_lieu: DuLieuTrangThaiNhanVien, csdl: Session = Depends(lay_csdl)):
+    nhan_vien = lay_nhan_vien(csdl, ma)
+    nhan_vien.trang_thai = du_lieu.trang_thai
+    csdl.commit()
+    return {"thong_bao": "Cập nhật trạng thái thành công", "trang_thai": du_lieu.trang_thai}
 
 
 def khoang_ngay_thong_ke(
