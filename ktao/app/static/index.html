@@ -293,6 +293,23 @@
         #chi_tiet_don_hang button {
             margin-top: 12px;
         }
+
+        #khung_nhan_vien {
+            padding: 25px;
+            border-radius: 15px;
+        }
+
+        #khung_nhan_vien h2 { color: #6f4e37; }
+
+        #khung_nhan_vien input {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        #khung_nhan_vien table { margin-top: 20px; }
+        #khung_nhan_vien th { background: #fff7ed; color: #78350f; }
+        #thong_bao_nhan_vien:empty { margin: 0; }
     </style>
 </head>
 
@@ -402,6 +419,45 @@
                         </table>
                     </div>
                 </details>
+            </div>
+        </section>
+
+        <section id="khung_nhan_vien" class="khung an">
+            <h2>👥 Quản lý tài khoản nhân viên</h2>
+
+            <label for="tim_nhan_vien">Tìm kiếm nhân viên</label>
+            <input type="search" id="tim_nhan_vien" placeholder="Nhập tên đăng nhập..."
+                   oninput="hienThiNhanVien()">
+
+            <h3 id="tieu_de_form_nhan_vien">Thêm nhân viên</h3>
+            <form id="bieu_mau_nhan_vien">
+                <input type="hidden" id="ma_nhan_vien_sua">
+
+                <label for="ten_dang_nhap_nhan_vien">Tên đăng nhập</label>
+                <input type="text" id="ten_dang_nhap_nhan_vien" minlength="3" maxlength="50" required>
+
+                <label for="mat_khau_nhan_vien">Mật khẩu khi tạo mới</label>
+                <input type="password" id="mat_khau_nhan_vien" minlength="6"
+                       autocomplete="new-password" required>
+
+                <button type="submit">Lưu nhân viên</button>
+                <button type="button" class="nut_huy" onclick="huySuaNhanVien()">Hủy</button>
+            </form>
+            <p id="thong_bao_nhan_vien" role="status"></p>
+
+            <div class="bang_cuon">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Mã</th>
+                            <th scope="col">Tên đăng nhập</th>
+                            <th scope="col">Vai trò</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="danh_sach_nhan_vien"></tbody>
+                </table>
             </div>
         </section>
 
@@ -668,6 +724,7 @@
     let danh_sach_danh_muc = [];
     let danh_sach_san_pham = [];
     let danh_sach_khach_hang = [];
+    let danh_sach_nhan_vien = [];
     let yeu_cau_thong_ke = null;
 
     const dinh_dang_ngay_vn = new Intl.DateTimeFormat("vi-VN", {
@@ -691,8 +748,8 @@
         return Number(so_tien).toLocaleString("vi-VN") + " đ";
     }
 
-    function hienThongBao(noi_dung, la_loi = false) {
-        const o = document.querySelector("#thong_bao_he_thong");
+    function hienThongBao(noi_dung, la_loi = false, bo_chon = "#thong_bao_he_thong") {
+        const o = document.querySelector(bo_chon);
         o.textContent = noi_dung;
         o.className = la_loi ? "loi" : "thanh_cong";
     }
@@ -780,6 +837,8 @@
 
             document.querySelector("#khung_thong_ke")
                 .classList.toggle("an", vai_tro !== "admin");
+            document.querySelector("#khung_nhan_vien")
+                .classList.toggle("an", vai_tro !== "admin");
 
             document.querySelector("#mat_khau").value = "";
 
@@ -788,6 +847,7 @@
             await taiKhachHang();
 
             if (vai_tro === "admin") {
+                await taiNhanVien();
                 await baoCaoThangNay();
             }
 
@@ -812,6 +872,12 @@
         danh_sach_danh_muc = [];
         danh_sach_san_pham = [];
         danh_sach_khach_hang = [];
+        danh_sach_nhan_vien = [];
+        document.querySelector("#khung_nhan_vien").classList.add("an");
+        document.querySelector("#danh_sach_nhan_vien").replaceChildren();
+        document.querySelector("#tim_nhan_vien").value = "";
+        hienThongBao("", false, "#thong_bao_nhan_vien");
+        huySuaNhanVien();
         document.querySelector("#danh_sach_khach_hang").innerHTML = "";
         datLaiLichSuDonHang();
         document.querySelector("#danh_sach_danh_muc").innerHTML = "";
@@ -826,6 +892,140 @@
 
         datLaiTaoDonHang();
     }
+
+    async function taiNhanVien() {
+        if (vai_tro !== "admin") return;
+
+        const token_hien_tai = token;
+        try {
+            const danh_sach = await goiAPI("/employees");
+            if (token !== token_hien_tai) return;
+            danh_sach_nhan_vien = danh_sach;
+            hienThiNhanVien();
+        } catch (loi) {
+            if (token === token_hien_tai) hienThongBao(loi.message, true, "#thong_bao_nhan_vien");
+        }
+    }
+
+    function hienThiNhanVien() {
+        const tu_khoa = document.querySelector("#tim_nhan_vien").value.trim().toLowerCase();
+        const danh_sach = danh_sach_nhan_vien.filter(nv =>
+            nv.ten_dang_nhap.toLowerCase().includes(tu_khoa)
+        );
+
+        document.querySelector("#danh_sach_nhan_vien").innerHTML = danh_sach.map(nv => {
+            const dang_hoat_dong = nv.trang_thai === "active";
+            return `
+                <tr>
+                    <td>${nv.ma}</td>
+                    <td>${anToan(nv.ten_dang_nhap)}</td>
+                    <td>Nhân viên</td>
+                    <td>${dang_hoat_dong ? "Đang hoạt động" : "Đã khóa"}</td>
+                    <td>
+                        <button type="button" class="nut_sua" onclick="batDauSuaNhanVien(${nv.ma})">Sửa</button>
+                        <button type="button" onclick="doiTrangThaiNhanVien(${nv.ma}, '${dang_hoat_dong ? "locked" : "active"}')">
+                            ${dang_hoat_dong ? "Khóa" : "Mở khóa"}
+                        </button>
+                        <button type="button" onclick="datLaiMatKhau(${nv.ma})">Đặt lại MK</button>
+                    </td>
+                </tr>`;
+        }).join("") || '<tr><td colspan="5">Không tìm thấy nhân viên</td></tr>';
+    }
+
+    async function luuNhanVien(su_kien) {
+        su_kien.preventDefault();
+        if (vai_tro !== "admin") return;
+
+        const ma = document.querySelector("#ma_nhan_vien_sua").value;
+        const ten_dang_nhap = document.querySelector("#ten_dang_nhap_nhan_vien").value.trim();
+        const mat_khau = document.querySelector("#mat_khau_nhan_vien").value;
+        if (ten_dang_nhap.length < 3) {
+            hienThongBao("Tên đăng nhập phải có ít nhất 3 ký tự", true, "#thong_bao_nhan_vien");
+            return;
+        }
+        if (!ma && mat_khau.length < 6) {
+            hienThongBao("Mật khẩu phải có ít nhất 6 ký tự", true, "#thong_bao_nhan_vien");
+            return;
+        }
+
+        const du_lieu = ma ? { ten_dang_nhap } : { ten_dang_nhap, mat_khau };
+        try {
+            const ket_qua = await goiAPI(ma ? "/employees/" + ma : "/employees", {
+                method: ma ? "PUT" : "POST",
+                body: JSON.stringify(du_lieu)
+            });
+            hienThongBao(ket_qua.thong_bao, false, "#thong_bao_nhan_vien");
+            huySuaNhanVien();
+            await taiNhanVien();
+        } catch (loi) {
+            hienThongBao(loi.message, true, "#thong_bao_nhan_vien");
+        }
+    }
+
+    function batDauSuaNhanVien(ma) {
+        const nhan_vien = danh_sach_nhan_vien.find(nv => nv.ma === ma);
+        if (!nhan_vien) return;
+
+        document.querySelector("#ma_nhan_vien_sua").value = nhan_vien.ma;
+        const ten = document.querySelector("#ten_dang_nhap_nhan_vien");
+        ten.value = nhan_vien.ten_dang_nhap;
+        const mat_khau = document.querySelector("#mat_khau_nhan_vien");
+        mat_khau.value = "";
+        mat_khau.disabled = true;
+        document.querySelector("#tieu_de_form_nhan_vien").textContent = "Sửa nhân viên";
+        ten.focus();
+    }
+
+    function huySuaNhanVien() {
+        document.querySelector("#bieu_mau_nhan_vien").reset();
+        document.querySelector("#ma_nhan_vien_sua").value = "";
+        document.querySelector("#mat_khau_nhan_vien").disabled = false;
+        document.querySelector("#tieu_de_form_nhan_vien").textContent = "Thêm nhân viên";
+    }
+
+    async function doiTrangThaiNhanVien(ma, trang_thai) {
+        if (vai_tro !== "admin") return;
+
+        const xac_nhan = confirm(trang_thai === "locked"
+            ? "Bạn có chắc muốn khóa tài khoản này?"
+            : "Bạn có chắc muốn mở khóa tài khoản này?");
+        if (!xac_nhan) return;
+
+        try {
+            const ket_qua = await goiAPI("/employees/" + ma + "/status", {
+                method: "PATCH",
+                body: JSON.stringify({ trang_thai })
+            });
+            hienThongBao(ket_qua.thong_bao, false, "#thong_bao_nhan_vien");
+            await taiNhanVien();
+        } catch (loi) {
+            hienThongBao(loi.message, true, "#thong_bao_nhan_vien");
+        }
+    }
+
+    async function datLaiMatKhau(ma) {
+        if (vai_tro !== "admin") return;
+
+        const mat_khau_moi = prompt("Nhập mật khẩu mới cho nhân viên:");
+        if (mat_khau_moi === null) return;
+        if (mat_khau_moi.length < 6) {
+            hienThongBao("Mật khẩu phải có ít nhất 6 ký tự", true, "#thong_bao_nhan_vien");
+            return;
+        }
+        if (!confirm("Xác nhận đặt lại mật khẩu nhân viên?")) return;
+
+        try {
+            const ket_qua = await goiAPI("/employees/" + ma + "/password", {
+                method: "PATCH",
+                body: JSON.stringify({ mat_khau_moi })
+            });
+            hienThongBao(ket_qua.thong_bao, false, "#thong_bao_nhan_vien");
+        } catch (loi) {
+            hienThongBao(loi.message, true, "#thong_bao_nhan_vien");
+        }
+    }
+
+    document.querySelector("#bieu_mau_nhan_vien").addEventListener("submit", luuNhanVien);
 
     async function taiDuLieu() {
         try {

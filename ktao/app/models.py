@@ -10,6 +10,7 @@ class NguoiDung(CoSo):
     ten_dang_nhap: Mapped[str] = mapped_column("username", String(60), unique=True)
     mat_khau_bam: Mapped[str] = mapped_column("password_hash", String(255))
     vai_tro: Mapped[str] = mapped_column("role", String(20), default="staff")
+    trang_thai: Mapped[str] = mapped_column("status", String(20), default="active", server_default="active")
 
 class KhachHang(CoSo):
     __tablename__ = "customers"
