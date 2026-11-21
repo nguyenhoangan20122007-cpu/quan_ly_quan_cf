@@ -133,9 +133,28 @@
         .loi { color: #c62828; }
         .thanh_cong { color: #2e7d32; }
 
+        .bo_loc_thong_ke {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+        }
+
+        .bo_loc_thong_ke input { margin: 6px 0 0; }
+        .bo_loc_thong_ke button { margin: 0; }
+
+        .so_lieu_thong_ke, .bieu_do_thong_ke {
+            display: grid;
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .so_lieu_thong_ke { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .bieu_do_thong_ke { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
         .the_thong_ke {
             background: #fff8ef;
-            border-left: 5px solid #63452e;
+            border: 1px solid #ecdbc8;
             padding: 20px;
             border-radius: 10px;
         }
@@ -149,7 +168,47 @@
             margin: 0;
             font-size: 25px;
             font-weight: bold;
-            color: #b85c38;
+            color: #77462b;
+            overflow-wrap: anywhere;
+        }
+
+        .khung_bieu_do {
+            border: 1px solid #ecdbc8;
+            border-radius: 10px;
+            padding: 18px;
+        }
+
+        .khung_bieu_do h3 { margin: 0 0 16px; }
+        .khung_bieu_do ul { margin: 0; padding: 0; list-style: none; }
+        .dong_bieu_do + .dong_bieu_do { margin-top: 14px; }
+
+        .nhan_bieu_do {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .nhan_bieu_do span { overflow-wrap: anywhere; }
+        .nhan_bieu_do strong { white-space: nowrap; }
+
+        .nen_cot_bieu_do {
+            height: 9px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f1e8de;
+        }
+
+        .cot_bieu_do { height: 100%; border-radius: inherit; background: #9b623a; }
+        #danh_sach_ban_chay .cot_bieu_do { background: #4d744f; }
+        #bieu_do_doanh_thu { max-height: 280px; overflow-y: auto; }
+        #thong_bao_thong_ke:empty { margin: 0; }
+        #khoang_ngay_hien_thi { margin: 16px 0 0; color: #63452e; }
+        #khoang_ngay_hien_thi + .so_lieu_thong_ke { margin-top: 12px; }
+        #chi_tiet_thong_ke summary { cursor: pointer; font-weight: bold; }
+
+        @media (max-width: 768px) {
+            .so_lieu_thong_ke, .bieu_do_thong_ke { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 600px) {
@@ -281,88 +340,68 @@
         <!-- THONG KE ADMIN -->
         <section id="khung_thong_ke" class="khung an">
             <h2>📊 Thống kê kinh doanh</h2>
+            <p>Đơn đã hoàn thành được thống kê theo ngày tạo đơn, giờ Việt Nam.</p>
 
-            <button onclick="taiThongKe()">Làm mới thống kê</button>
-
-            <div class="luoi">
-                <div class="the_thong_ke">
-                    <h3>Tổng sản phẩm</h3>
-                    <p id="tong_san_pham">0</p>
-                </div>
-
-                <div class="the_thong_ke">
-                    <h3>Tổng đơn hàng</h3>
-                    <p id="tong_don_hang">0</p>
-                </div>
-
-                <div class="the_thong_ke">
-                    <h3>Đơn hoàn thành</h3>
-                    <p id="don_hoan_thanh">0</p>
-                </div>
-
-                <div class="the_thong_ke">
-                    <h3>Đơn đã hủy</h3>
-                    <p id="don_da_huy">0</p>
-                </div>
-
-                <div class="the_thong_ke">
-                    <h3>Doanh thu đơn hoàn thành</h3>
-                    <p id="doanh_thu">0 đ</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- BAO CAO DOANH THU -->
-        <section id="khung_bao_cao" class="khung an">
-            <h2>📈 Báo cáo doanh thu</h2>
-            <p>Doanh thu được tính theo ngày tạo đơn của các đơn đã hoàn thành.</p>
-
-            <div class="luoi">
+            <form id="bo_loc_thong_ke" class="bo_loc_thong_ke">
                 <div>
-                    <label for="tu_ngay">Từ ngày</label>
-                    <input type="date" id="tu_ngay">
+                    <label for="tu_ngay_thong_ke">Từ ngày</label>
+                    <input type="date" id="tu_ngay_thong_ke" required>
                 </div>
 
                 <div>
-                    <label for="den_ngay">Đến ngày</label>
-                    <input type="date" id="den_ngay">
-                </div>
-            </div>
-
-            <button type="button" onclick="taiBaoCaoDoanhThu()">Xem báo cáo</button>
-            <button type="button" onclick="baoCaoHomNay()">Hôm nay</button>
-            <button type="button" onclick="baoCaoThangNay()">Tháng này</button>
-            <p id="thong_bao_bao_cao" role="status"></p>
-
-            <div class="luoi">
-                <div class="the_thong_ke">
-                    <h3>Tổng doanh thu</h3>
-                    <p id="bao_cao_tong_doanh_thu">0 đ</p>
+                    <label for="den_ngay_thong_ke">Đến ngày</label>
+                    <input type="date" id="den_ngay_thong_ke" required>
                 </div>
 
-                <div class="the_thong_ke">
-                    <h3>Số đơn hoàn thành</h3>
-                    <p id="bao_cao_tong_don">0</p>
+                <button type="submit">Xem thống kê</button>
+                <button type="button" onclick="baoCaoHomNay()">Hôm nay</button>
+                <button type="button" onclick="baoCaoThangNay()">Tháng này</button>
+            </form>
+            <p id="thong_bao_thong_ke" role="status"></p>
+
+            <div id="ket_qua_thong_ke" class="an">
+                <p id="khoang_ngay_hien_thi"></p>
+                <div class="so_lieu_thong_ke">
+                    <div class="the_thong_ke">
+                        <h3>Tổng doanh thu</h3>
+                        <p id="tong_doanh_thu"></p>
+                    </div>
+                    <div class="the_thong_ke">
+                        <h3>Tổng đơn hàng</h3>
+                        <p id="tong_don_thong_ke"></p>
+                    </div>
+                    <div class="the_thong_ke">
+                        <h3>Số ly đã bán</h3>
+                        <p id="tong_ly_ban"></p>
+                    </div>
                 </div>
-            </div>
 
-            <h3>Biểu đồ doanh thu theo ngày</h3>
-            <div style="position: relative; height: 350px">
-                <canvas id="bieu_do_doanh_thu" role="img" aria-label="Biểu đồ cột doanh thu theo ngày"></canvas>
-            </div>
+                <div class="bieu_do_thong_ke">
+                    <section class="khung_bieu_do" aria-labelledby="tieu_de_doanh_thu">
+                        <h3 id="tieu_de_doanh_thu">Doanh thu theo ngày</h3>
+                        <div id="bieu_do_doanh_thu"></div>
+                    </section>
+                    <section class="khung_bieu_do" aria-labelledby="tieu_de_ban_chay">
+                        <h3 id="tieu_de_ban_chay">Top 5 đồ uống bán chạy</h3>
+                        <div id="danh_sach_ban_chay"></div>
+                    </section>
+                </div>
 
-            <h3>Chi tiết doanh thu</h3>
-            <div class="bang_cuon">
-                <table>
-                    <thead>
-                        <tr>
-                            <th scope="col">Ngày</th>
-                            <th scope="col">Số đơn</th>
-                            <th scope="col">Doanh thu</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bang_bao_cao"></tbody>
-                </table>
+                <details id="chi_tiet_thong_ke">
+                    <summary>Chi tiết doanh thu</summary>
+                    <div class="bang_cuon">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Ngày</th>
+                                    <th scope="col">Số đơn</th>
+                                    <th scope="col">Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bang_bao_cao"></tbody>
+                        </table>
+                    </div>
+                </details>
             </div>
         </section>
 
@@ -621,7 +660,6 @@
     </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/tao_don_hang.js"></script>
 <script src="/static/thanh_toan_lich_su_don.js"></script>
 <script>
@@ -630,8 +668,7 @@
     let danh_sach_danh_muc = [];
     let danh_sach_san_pham = [];
     let danh_sach_khach_hang = [];
-    let bieu_do_doanh_thu = null;
-    let yeu_cau_bao_cao = null;
+    let yeu_cau_thong_ke = null;
 
     const dinh_dang_ngay_vn = new Intl.DateTimeFormat("vi-VN", {
         timeZone: "Asia/Ho_Chi_Minh",
@@ -744,9 +781,6 @@
             document.querySelector("#khung_thong_ke")
                 .classList.toggle("an", vai_tro !== "admin");
 
-            document.querySelector("#khung_bao_cao")
-                .classList.toggle("an", vai_tro !== "admin");
-
             document.querySelector("#mat_khau").value = "";
 
             await taiDuLieu();
@@ -754,7 +788,6 @@
             await taiKhachHang();
 
             if (vai_tro === "admin") {
-                await taiThongKe();
                 await baoCaoThangNay();
             }
 
@@ -770,14 +803,11 @@
     function dangXuat() {
         token = "";
         vai_tro = "";
-        yeu_cau_bao_cao?.abort();
-        bieu_do_doanh_thu?.destroy();
-        bieu_do_doanh_thu = null;
-        document.querySelector("#khung_bao_cao").classList.add("an");
-        document.querySelector("#thong_bao_bao_cao").textContent = "";
-        document.querySelector("#bao_cao_tong_doanh_thu").textContent = dinhDangTien(0);
-        document.querySelector("#bao_cao_tong_don").textContent = "0";
-        document.querySelector("#bang_bao_cao").replaceChildren();
+        yeu_cau_thong_ke?.abort();
+        document.querySelector("#khung_thong_ke").classList.add("an");
+        document.querySelector("#ket_qua_thong_ke").classList.add("an");
+        document.querySelector("#thong_bao_thong_ke").textContent = "";
+        document.querySelector("#chi_tiet_thong_ke").open = false;
 
         danh_sach_danh_muc = [];
         danh_sach_san_pham = [];
@@ -1108,32 +1138,6 @@
         }
     }
 
-    async function taiThongKe() {
-        if (vai_tro !== "admin") return;
-
-        try {
-            const du_lieu = await goiAPI("/statistics");
-
-            document.querySelector("#tong_san_pham").textContent =
-                du_lieu.tong_san_pham;
-
-            document.querySelector("#tong_don_hang").textContent =
-                du_lieu.tong_don_hang;
-
-            document.querySelector("#don_hoan_thanh").textContent =
-                du_lieu.don_hoan_thanh;
-
-            document.querySelector("#don_da_huy").textContent =
-                du_lieu.don_da_huy;
-
-            document.querySelector("#doanh_thu").textContent =
-                dinhDangTien(du_lieu.doanh_thu);
-
-        } catch (loi) {
-            hienThongBao(loi.message, true);
-        }
-    }
-
     function dinhDangNgayVietNam(ngay) {
         const { year, month, day } = Object.fromEntries(
             dinh_dang_ngay_vn.formatToParts(ngay).map(({ type, value }) => [type, value])
@@ -1141,15 +1145,17 @@
         return `${year}-${month}-${day}`;
     }
 
-    async function taiBaoCaoDoanhThu() {
+    async function taiThongKe() {
         if (vai_tro !== "admin") return;
 
-        yeu_cau_bao_cao?.abort();
-        const tu_ngay = document.querySelector("#tu_ngay").value;
-        const den_ngay = document.querySelector("#den_ngay").value;
-        const thong_bao = document.querySelector("#thong_bao_bao_cao");
+        yeu_cau_thong_ke?.abort();
+        const tu_ngay = document.querySelector("#tu_ngay_thong_ke").value;
+        const den_ngay = document.querySelector("#den_ngay_thong_ke").value;
+        const thong_bao = document.querySelector("#thong_bao_thong_ke");
+        const ket_qua = document.querySelector("#ket_qua_thong_ke");
+        ket_qua.classList.add("an");
 
-        if (!tu_ngay || !den_ngay || tu_ngay > den_ngay) {
+        if (!tu_ngay || !den_ngay || new Date(tu_ngay) > new Date(den_ngay)) {
             thong_bao.className = "loi";
             thong_bao.textContent = !tu_ngay || !den_ngay
                 ? "Vui lòng chọn khoảng thời gian."
@@ -1158,87 +1164,109 @@
         }
 
         const yeu_cau = new AbortController();
-        yeu_cau_bao_cao = yeu_cau;
+        yeu_cau_thong_ke = yeu_cau;
         thong_bao.className = "";
-        thong_bao.textContent = "Đang tải báo cáo…";
+        thong_bao.textContent = "Đang tải thống kê…";
 
         try {
             const tham_so = new URLSearchParams({ tu_ngay, den_ngay });
-            const du_lieu = await goiAPI("/statistics/revenue?" + tham_so, {
-                signal: yeu_cau.signal
-            });
+            const tuy_chon = { signal: yeu_cau.signal };
+            const [tong_hop, ban_chay, theo_ngay] = await Promise.all([
+                goiAPI("/statistics/revenue?" + tham_so, tuy_chon),
+                goiAPI("/statistics/top-products?" + tham_so, tuy_chon),
+                goiAPI("/statistics/daily?" + tham_so, tuy_chon)
+            ]);
             if (yeu_cau.signal.aborted) return;
 
-            document.querySelector("#bao_cao_tong_doanh_thu").textContent =
-                dinhDangTien(du_lieu.tong_doanh_thu);
-            document.querySelector("#bao_cao_tong_don").textContent = du_lieu.tong_so_don;
+            document.querySelector("#khoang_ngay_hien_thi").textContent =
+                `Khoảng thống kê ${dinhDangNgayThongKe(tong_hop.tu_ngay)} – ${dinhDangNgayThongKe(tong_hop.den_ngay)}`;
+            document.querySelector("#tong_doanh_thu").textContent =
+                dinhDangTien(tong_hop.tong_doanh_thu);
+            document.querySelector("#tong_don_thong_ke").textContent =
+                tong_hop.tong_don_hang.toLocaleString("vi-VN") + " đơn";
+            document.querySelector("#tong_ly_ban").textContent =
+                tong_hop.tong_ly_ban.toLocaleString("vi-VN") + " ly";
+
+            hienThiBieuDo("#bieu_do_doanh_thu", theo_ngay.map(dong => ({
+                nhan: dinhDangNgayThongKe(dong.ngay),
+                gia_tri: dong.doanh_thu,
+                hien_thi: dinhDangTien(dong.doanh_thu)
+            })), "Chưa có doanh thu trong khoảng ngày này.");
+            hienThiBieuDo("#danh_sach_ban_chay", ban_chay.map((sp, vi_tri) => ({
+                nhan: `${vi_tri + 1}. ${sp.ten}`,
+                gia_tri: sp.so_luong,
+                hien_thi: sp.so_luong.toLocaleString("vi-VN") + " ly"
+            })), "Chưa có đồ uống được bán trong khoảng ngày này.");
+
             document.querySelector("#bang_bao_cao").innerHTML =
-                du_lieu.chi_tiet.map(dong => `
+                tong_hop.chi_tiet.map(dong => `
                     <tr>
-                        <td>${anToan(dong.ngay)}</td>
+                        <td>${anToan(dinhDangNgayThongKe(dong.ngay))}</td>
                         <td>${dong.so_don}</td>
                         <td>${dinhDangTien(dong.doanh_thu)}</td>
                     </tr>
                 `).join("");
 
-            if (typeof Chart === "undefined") {
-                thong_bao.className = "loi";
-                thong_bao.textContent = "Không tải được thư viện biểu đồ Chart.js.";
-                return;
-            }
-
-            veBieuDoDoanhThu(du_lieu.chi_tiet);
-            thong_bao.className = "thanh_cong";
-            thong_bao.textContent = "Đã tải báo cáo doanh thu.";
+            ket_qua.classList.remove("an");
+            thong_bao.textContent = "";
         } catch (loi) {
             if (yeu_cau.signal.aborted) return;
 
             thong_bao.className = "loi";
             thong_bao.textContent = loi.message;
         } finally {
-            if (yeu_cau_bao_cao === yeu_cau) {
-                yeu_cau_bao_cao = null;
+            yeu_cau.abort();
+            if (yeu_cau_thong_ke === yeu_cau) {
+                yeu_cau_thong_ke = null;
             }
         }
     }
 
-    function veBieuDoDoanhThu(danh_sach) {
-        bieu_do_doanh_thu?.destroy();
-        bieu_do_doanh_thu = new Chart(document.querySelector("#bieu_do_doanh_thu"), {
-            type: "bar",
-            data: {
-                labels: danh_sach.map(dong => dong.ngay),
-                datasets: [{
-                    label: "Doanh thu (VNĐ)",
-                    data: danh_sach.map(dong => dong.doanh_thu),
-                    backgroundColor: "#8b6242",
-                    borderColor: "#63452e",
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
+    function dinhDangNgayThongKe(ngay) {
+        return ngay.split("-").reverse().join("/");
+    }
+
+    function hienThiBieuDo(bo_chon, danh_sach, thong_bao_rong) {
+        const khung = document.querySelector(bo_chon);
+        if (!danh_sach.length) {
+            khung.textContent = thong_bao_rong;
+            return;
+        }
+
+        const lon_nhat = danh_sach.reduce((lon_nhat, dong) => Math.max(lon_nhat, dong.gia_tri), 1);
+        khung.innerHTML = `<ul>${danh_sach.map(dong => {
+            const phan_tram = Math.max(0, dong.gia_tri / lon_nhat * 100);
+            return `
+                <li class="dong_bieu_do">
+                    <div class="nhan_bieu_do">
+                        <span>${anToan(dong.nhan)}</span>
+                        <strong>${anToan(dong.hien_thi)}</strong>
+                    </div>
+                    <div class="nen_cot_bieu_do" aria-hidden="true">
+                        <div class="cot_bieu_do" style="width: ${phan_tram}%"></div>
+                    </div>
+                </li>`;
+        }).join("")}</ul>`;
     }
 
     function baoCaoHomNay() {
         const hom_nay = dinhDangNgayVietNam(new Date());
-        document.querySelector("#tu_ngay").value = hom_nay;
-        document.querySelector("#den_ngay").value = hom_nay;
-        return taiBaoCaoDoanhThu();
+        document.querySelector("#tu_ngay_thong_ke").value = hom_nay;
+        document.querySelector("#den_ngay_thong_ke").value = hom_nay;
+        return taiThongKe();
     }
 
     function baoCaoThangNay() {
         const hom_nay = dinhDangNgayVietNam(new Date());
-        document.querySelector("#tu_ngay").value = hom_nay.slice(0, 7) + "-01";
-        document.querySelector("#den_ngay").value = hom_nay;
-        return taiBaoCaoDoanhThu();
+        document.querySelector("#tu_ngay_thong_ke").value = hom_nay.slice(0, 7) + "-01";
+        document.querySelector("#den_ngay_thong_ke").value = hom_nay;
+        return taiThongKe();
     }
+
+    document.querySelector("#bo_loc_thong_ke").addEventListener("submit", su_kien => {
+        su_kien.preventDefault();
+        taiThongKe();
+    });
 
     document.querySelector("#bieu_mau_dang_nhap")
         .addEventListener("submit", dangNhap);
